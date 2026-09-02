@@ -29,7 +29,14 @@ import { AccountBar } from './AccountBar';
 import { FieldSelect } from './FieldSelect';
 import { GearFormModal, type GearDraft } from './GearFormModal';
 import { EmptySlotTile, GearTile, StatGauge, type GearView } from './GearTile';
-import { classIcon, factionIcon, type GameAccount, type HeroRow, type OutfitResult } from './types';
+import type { GameAccount, HeroRow, OutfitResult } from './types';
+import {
+  STAR_ICONS,
+  WorIconWithFallback,
+  classIconUrls,
+  factionIconUrls,
+  renderStars,
+} from './worIcons';
 
 type Tab = 'gear' | 'equipment' | 'outfit';
 
@@ -424,30 +431,37 @@ export function OutfitterPage() {
                   label={CLASS_DISPLAY_NAMES[heroClass]}
                   onClick={() => setClassFilter((previous) => cycleTriFilter(previous, heroClass))}
                 >
-                  <img
-                    src={classIcon(heroClass)}
-                    alt=""
-                    width={24}
-                    height={24}
+                  <WorIconWithFallback
                     className="invert-on-light"
+                    primarySrc={classIconUrls(heroClass).primary}
+                    fallbackSrc={classIconUrls(heroClass).fallback}
+                    alt={CLASS_DISPLAY_NAMES[heroClass]}
+                    size={24}
                   />
                 </FilterIconButton>
               ))}
             </div>
             <div className="filter-group">
               <span className="filter-label">Rarity:</span>
-              {FILTER_STAR_RATINGS.map((stars) => (
-                <FilterIconButton
-                  key={stars}
-                  state={triFilterState(rarityFilter, String(stars))}
-                  label={FILTER_STAR_RARITY_LABELS[stars]}
-                  onClick={() =>
-                    setRarityFilter((previous) => cycleTriFilter(previous, String(stars)))
-                  }
-                >
-                  {stars}★
-                </FilterIconButton>
-              ))}
+              {FILTER_STAR_RATINGS.map((stars) => {
+                const iconSrc = STAR_ICONS[`star${stars}`];
+                return (
+                  <FilterIconButton
+                    key={stars}
+                    state={triFilterState(rarityFilter, String(stars))}
+                    label={`${FILTER_STAR_RARITY_LABELS[stars]} rarity`}
+                    onClick={() =>
+                      setRarityFilter((previous) => cycleTriFilter(previous, String(stars)))
+                    }
+                  >
+                    {iconSrc ? (
+                      <img src={iconSrc} alt={`${stars} star`} width={24} height={24} />
+                    ) : (
+                      <span aria-hidden="true">{stars}★</span>
+                    )}
+                  </FilterIconButton>
+                );
+              })}
             </div>
             <div className="filter-group">
               <span className="filter-label">Faction:</span>
@@ -458,12 +472,12 @@ export function OutfitterPage() {
                   label={FACTION_DISPLAY_NAMES[faction]}
                   onClick={() => setFactionFilter((previous) => cycleTriFilter(previous, faction))}
                 >
-                  <img
-                    src={factionIcon(faction)}
-                    alt=""
-                    width={24}
-                    height={24}
+                  <WorIconWithFallback
                     className="invert-on-light"
+                    primarySrc={factionIconUrls(faction).primary}
+                    fallbackSrc={factionIconUrls(faction).fallback}
+                    alt={FACTION_DISPLAY_NAMES[faction]}
+                    size={24}
                   />
                 </FilterIconButton>
               ))}
@@ -486,7 +500,10 @@ export function OutfitterPage() {
                     />
                   ) : null}
                   <div>
-                    <div className="font-semibold">{hero.name}</div>
+                    <div className="flex items-center gap-2">
+                      {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
+                      <div className="font-semibold">{hero.name}</div>
+                    </div>
                     <div className="text-muted text-xs">
                       {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
                     </div>

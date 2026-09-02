@@ -17,7 +17,7 @@ Watcher of Realms equipment manager and optimizer. Store mythic gear, save one l
 - Per-account gear inventory with set, main, and four substats (Ctrl+V a gear screenshot to fill stats)
 - Hero loadouts with base + gear stat breakdown
 - Weighted optimizer (ATK / crit / speed with diminishing returns) returning up to three ranked sets
-- Admin catalog sync from Codex (settings menu) for the live server
+- Admin catalog sync from Codex (person menu) for the live server
 
 ## Requirements
 

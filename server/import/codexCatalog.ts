@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 
 import { CODEX_WOR_DB_PATH, CODEX_WOR_IMAGES_DIR, HERO_IMAGES_DIR } from '../config.js';
 import { getAppDb } from '../db/appDb.js';
+import { writeTacticianClassIconSvg } from './tacticianIcon.js';
 
 type CodexHeroRow = {
   slug: string;
@@ -197,5 +198,6 @@ export function importCodexCatalog(): CatalogImportSummary {
   transaction();
 
   const iconsCopied = copyIconTree('classes') + copyIconTree('factions');
+  writeTacticianClassIconSvg();
   return { heroes: heroes.length, portraitsCopied, iconsCopied, missingStats };
 }
