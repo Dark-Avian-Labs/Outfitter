@@ -10,3 +10,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.0.0** `chore` [#1](https://github.com/Dark-Avian-Labs/Outfitter/pull/1): feat/initial app
 - **v1.0.1** `chore`: Release
 - **v1.0.2** `fix(env)`: Updated codex path in ENV
+- **v1.0.3** `chore` [#3](https://github.com/Dark-Avian-Labs/Outfitter/pull/3): fix/header menu and outfit layout
