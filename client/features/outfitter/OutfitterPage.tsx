@@ -673,6 +673,7 @@ export function OutfitterPage() {
       <GearFormModal
         open={gearFormOpen}
         gear={editingGear}
+        existingGear={gear}
         heroes={heroes}
         error={formError}
         onClose={() => setGearFormOpen(false)}
