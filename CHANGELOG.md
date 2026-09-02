@@ -8,3 +8,4 @@ bumps the version (from the merged PR title / squash commit message).
 ## Pull requests (oldest → newest)
 
 - **v1.0.0** `chore` [#1](https://github.com/Dark-Avian-Labs/Outfitter/pull/1): feat/initial app
+- **v1.0.1** `chore`: Release
