@@ -143,6 +143,25 @@ Crit Rate 17.5%
       prefix: null,
     });
   });
+
+  it('matches Insight without the leading The, and ATK Spd glued to its value', () => {
+    const parsed = parseGearOcr(`
+Variant Mythic Gear
+Variant: Insight Bangle+
+Crit. Rate 60%
+ATK Bonus 19.5%
+Crit. DMG 33%
+ATKSpd.79
+DEF 256
+`);
+    expect(parsed).toMatchObject({
+      slot: 'bangle',
+      set_key: 'the_insight',
+      prefix: 'variant',
+    });
+    expect(parsed.stats.map((entry) => entry.stat)).toEqual(['critRate', 'atkBonus', 'critDmg', 'atkSpd', 'def']);
+    expect(parsed.stats[3]).toEqual({ stat: 'atkSpd', value: 79 });
+  });
 });
 
 describe('applyOcrStats', () => {
