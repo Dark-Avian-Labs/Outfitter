@@ -1,0 +1,50 @@
+name: Outfitter PR Checks
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: 26
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    steps:
+      # Actions are pinned to commit SHAs (tag in comment) so a retargeted or
+      # compromised tag cannot inject code into CI. Dependabot keeps the pins
+      # current.
+      - name: Checkout code
+        uses: useblacksmith/checkout@046e27863876319367379f972a0c394bee91aee1 # v1.4.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+
+      # `pnpm run validate` is run-quality-checks.mjs. Do not expand this into
+      # separate format/lint/typecheck/test steps. Build stays its own step.
+      - name: Run quality checks
+        run: pnpm run validate
+
+      - name: Build project
+        run: pnpm run build
