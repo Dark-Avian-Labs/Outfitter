@@ -18,3 +18,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.2.0** `chore` [#8](https://github.com/Dark-Avian-Labs/Outfitter/pull/8): feat/ocr title bonus and delete confirm
 - **v1.2.1** `chore` [#9](https://github.com/Dark-Avian-Labs/Outfitter/pull/9): fix/ocr the sets and atk spd
 - **v1.2.2** `chore` [#10](https://github.com/Dark-Avian-Labs/Outfitter/pull/10): fix/rarity purple hue
+- **v1.3.0** `chore` [#11](https://github.com/Dark-Avian-Labs/Outfitter/pull/11): feat/ocr multi pass
