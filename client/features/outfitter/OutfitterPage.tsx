@@ -424,7 +424,13 @@ export function OutfitterPage() {
                   label={CLASS_DISPLAY_NAMES[heroClass]}
                   onClick={() => setClassFilter((previous) => cycleTriFilter(previous, heroClass))}
                 >
-                  <img src={classIcon(heroClass)} alt="" width={24} height={24} />
+                  <img
+                    src={classIcon(heroClass)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="invert-on-light"
+                  />
                 </FilterIconButton>
               ))}
             </div>
@@ -452,7 +458,13 @@ export function OutfitterPage() {
                   label={FACTION_DISPLAY_NAMES[faction]}
                   onClick={() => setFactionFilter((previous) => cycleTriFilter(previous, faction))}
                 >
-                  <img src={factionIcon(faction)} alt="" width={24} height={24} />
+                  <img
+                    src={factionIcon(faction)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="invert-on-light"
+                  />
                 </FilterIconButton>
               ))}
             </div>
@@ -492,10 +504,10 @@ export function OutfitterPage() {
       ) : null}
 
       {tab === 'outfit' ? (
-        <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
-          <div className="glass-surface p-4">
+        <div className="grid gap-6 lg:grid-cols-[28rem_1fr]">
+          <div className="glass-surface min-w-0 p-4">
             <FieldSelect
-              className="min-w-[12rem]"
+              className="w-full min-w-0"
               label="Hero"
               value={outfitHero}
               options={[
@@ -530,9 +542,9 @@ export function OutfitterPage() {
                 ))}
               </div>
             ) : null}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               <FieldSelect
-                className="min-w-[12rem]"
+                className="min-w-0"
                 label="Left set"
                 value={desiredLeft}
                 options={[
@@ -542,7 +554,7 @@ export function OutfitterPage() {
                 onChange={setDesiredLeft}
               />
               <FieldSelect
-                className="min-w-[12rem]"
+                className="min-w-0"
                 label="Right set"
                 value={desiredRight}
                 options={[
