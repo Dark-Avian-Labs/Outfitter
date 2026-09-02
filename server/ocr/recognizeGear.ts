@@ -1,6 +1,6 @@
 import Tesseract from 'tesseract.js';
 
-import { parseGearOcrText, type DetectedGearStat } from '../../shared/gearOcr.js';
+import { parseGearOcr, type ParsedGearOcr } from '../../shared/gearOcr.js';
 import { tessWorkerOptions } from './tessdata.js';
 
 type OcrWorker = Awaited<ReturnType<typeof Tesseract.createWorker>>;
@@ -13,7 +13,7 @@ async function getWorker(): Promise<OcrWorker> {
       const worker = await Tesseract.createWorker('eng', 1, tessWorkerOptions());
       await worker.setParameters({
         tessedit_char_whitelist:
-          '0123456789.%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ',
+          "0123456789.%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ':-+",
         tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
       });
       return worker;
@@ -44,11 +44,9 @@ export async function closeOcrWorker(): Promise<void> {
   workerPromise = null;
 }
 
-export async function recognizeGearStats(
-  image: Buffer,
-): Promise<{ text: string; stats: DetectedGearStat[] }> {
+export async function recognizeGearStats(image: Buffer): Promise<{ text: string } & ParsedGearOcr> {
   const worker = await getWorker();
   const result = await worker.recognize(image);
   const text = result.data.text ?? '';
-  return { text, stats: parseGearOcrText(text) };
+  return { text, ...parseGearOcr(text) };
 }

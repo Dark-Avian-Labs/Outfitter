@@ -1,24 +1,36 @@
 import {
   GEAR_SLOTS,
   GEAR_STAT_KEYS,
+  MAIN_STAT_BONUS_MAX,
+  SLOT_LABELS,
   SLOT_MAIN_STATS,
+  type GearPrefix,
   type GearSlot,
   type GearStatKey,
 } from './catalog.js';
-import { setsForSlot } from './sets.js';
+import { ALL_SETS, setsForSlot } from './sets.js';
 
 export type DetectedGearStat = {
   stat: GearStatKey;
   value: number;
+  bonus?: number;
 };
 
 export type OcrGearFields = {
   slot: GearSlot;
   set_key: string;
+  prefix: GearPrefix;
   main_stat: GearStatKey;
   main_value: number;
   main_bonus: number;
   substats: { stat: GearStatKey; value: number }[];
+};
+
+export type ParsedGearOcr = {
+  stats: DetectedGearStat[];
+  slot: GearSlot | null;
+  set_key: string | null;
+  prefix: GearPrefix | null;
 };
 
 const STAT_ALIASES: readonly { pattern: string; stat: GearStatKey }[] = [
@@ -30,8 +42,10 @@ const STAT_ALIASES: readonly { pattern: string; stat: GearStatKey }[] = [
   { pattern: 'HEAL EFFECT', stat: 'healingEffect' },
   { pattern: 'RAGE REGEN', stat: 'rageRegen' },
   { pattern: 'ATTACK SPEED', stat: 'atkSpd' },
+  { pattern: 'ATTACK SPD', stat: 'atkSpd' },
   { pattern: 'ATK SPEED', stat: 'atkSpd' },
   { pattern: 'ATK SPD', stat: 'atkSpd' },
+  { pattern: 'ATKSPD', stat: 'atkSpd' },
   { pattern: 'CRIT DAMAGE', stat: 'critDmg' },
   { pattern: 'CRIT RATE', stat: 'critRate' },
   { pattern: 'CRIT DMG', stat: 'critDmg' },
@@ -47,8 +61,10 @@ function normalizeOcrText(text: string): string {
   return text
     .toUpperCase()
     .replace(/\r\n/g, '\n')
+    .replace(/[''`´]/g, '')
     .replace(/\.(?!\d)/g, ' ')
-    .replace(/[^A-Z0-9.,%\n]+/g, ' ')
+    .replace(/,\s*(?=[A-Z])/g, ' ')
+    .replace(/[^A-Z0-9.,%+\n]+/g, ' ')
     .replace(/[ \t]+/g, ' ')
     .trim();
 }
@@ -67,10 +83,31 @@ function parseStatNumber(raw: string): number | null {
   return value;
 }
 
-function firstNumber(text: string): number | null {
-  const match = text.match(/(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)/);
-  if (!match?.[1]) return null;
-  return parseStatNumber(match[1]);
+function allNumbers(text: string): number[] {
+  const matches = text.matchAll(/(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{1,5}(?:[.,]\d{1,2})?)/g);
+  const values: number[] = [];
+  for (const match of matches) {
+    const value = match[1] ? parseStatNumber(match[1]) : null;
+    if (value != null) values.push(value);
+  }
+  return values;
+}
+
+function parseValueAndBonus(
+  text: string,
+  stat: GearStatKey,
+): { value: number; bonus: number } | null {
+  const plusMatches = [...text.matchAll(/\+(\d{1,3}(?:[.,]\d{1,2})?)/g)];
+  const plusMatch = plusMatches.at(-1);
+  const withoutPlus = text.replace(/\+\d+(?:[.,]\d+)?/g, ' ');
+  const numbers = allNumbers(withoutPlus);
+  const value = numbers[0] ?? null;
+  if (value == null) return null;
+  const maxBonus = MAIN_STAT_BONUS_MAX[stat] ?? 0;
+  let bonus = plusMatch?.[1] ? parseStatNumber(plusMatch[1]) : null;
+  if (bonus == null && numbers[1] != null && numbers[1] <= maxBonus) bonus = numbers[1];
+  if (bonus != null && bonus > maxBonus) bonus = 0;
+  return { value, bonus: bonus ?? 0 };
 }
 
 function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
@@ -87,12 +124,93 @@ function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
   return null;
 }
 
+function joinSplitAbbrevLines(lines: string[]): string[] {
+  const joined: string[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const next = lines[index + 1];
+    if (line === 'CRIT' && next && /^(RATE|DMG)\b/.test(next)) {
+      joined.push(`CRIT ${next}`);
+      index += 1;
+      continue;
+    }
+    if (line === 'ATK' && next && /^SPD\b/.test(next)) {
+      joined.push(`ATK ${next}`);
+      index += 1;
+      continue;
+    }
+    if (line) joined.push(line);
+  }
+  return joined;
+}
+
+function hasPhrase(haystack: string, phrase: string): boolean {
+  const index = haystack.indexOf(phrase);
+  if (index < 0) return false;
+  const before = index === 0 ? '' : haystack[index - 1];
+  if (before && /[A-Z0-9]/.test(before)) return false;
+  const afterIndex = index + phrase.length;
+  const after = afterIndex >= haystack.length ? '' : haystack[afterIndex];
+  if (after && /[A-Z0-9]/.test(after)) return false;
+  return true;
+}
+
+const SET_NEEDLES = ALL_SETS.map((set) => ({
+  key: set.key,
+  needle: normalizeOcrText(set.name).replace(/\n/g, ' '),
+})).sort((a, b) => b.needle.length - a.needle.length);
+
+const SLOT_NEEDLES = GEAR_SLOTS.map((slot) => ({
+  slot,
+  needle: normalizeOcrText(SLOT_LABELS[slot]).replace(/\n/g, ' '),
+}));
+
+function ocrLines(text: string): string[] {
+  return joinSplitAbbrevLines(
+    normalizeOcrText(text)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+}
+
+function findPrefix(blob: string): GearPrefix | null {
+  if (hasPhrase(blob, 'VARIANT')) return 'variant';
+  if (hasPhrase(blob, 'ANCIENT')) return 'ancient';
+  if (hasPhrase(blob, 'MYTHIC GEAR')) return 'none';
+  return null;
+}
+
+function findSlot(lines: string[]): GearSlot | null {
+  let found: GearSlot | null = null;
+  for (const line of lines) {
+    for (const { slot, needle } of SLOT_NEEDLES) {
+      if (hasPhrase(line, needle)) found = slot;
+    }
+  }
+  return found;
+}
+
+function findSetKey(blob: string): string | null {
+  for (const { key, needle } of SET_NEEDLES) {
+    if (hasPhrase(blob, needle)) return key;
+  }
+  const compact = blob.replace(/[\n ]/g, '');
+  for (const { key, needle } of SET_NEEDLES) {
+    const compactNeedle = needle.replace(/ /g, '');
+    if (compactNeedle.length >= 5 && compact.includes(compactNeedle)) return key;
+  }
+  return null;
+}
+
 export function parseGearOcrText(text: string): DetectedGearStat[] {
-  const lines = normalizeOcrText(text)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const detected: DetectedGearStat[] = [];
+  return parseGearOcr(text).stats;
+}
+
+export function parseGearOcr(text: string): ParsedGearOcr {
+  const lines = ocrLines(text);
+  const blob = lines.join('\n');
+  const stats: DetectedGearStat[] = [];
   const seen = new Set<GearStatKey>();
 
   for (let index = 0; index < lines.length; index += 1) {
@@ -100,17 +218,34 @@ export function parseGearOcrText(text: string): DetectedGearStat[] {
     if (!line) continue;
     const matched = matchStat(line);
     if (!matched) continue;
-    let value = firstNumber(matched.rest);
-    if (value == null) {
-      const next = lines[index + 1];
-      if (next && !matchStat(next)) value = firstNumber(next);
+    const isMain = stats.length === 0;
+    let source = matched.rest;
+    const next = lines[index + 1];
+    const restHasValue = allNumbers(matched.rest).length > 0;
+    if (next && !matchStat(next) && (isMain || !restHasValue)) {
+      source = `${matched.rest} ${next}`.trim();
     }
-    if (value == null || seen.has(matched.stat)) continue;
+    const parsed = isMain
+      ? parseValueAndBonus(source, matched.stat)
+      : (() => {
+          const value = allNumbers(source)[0] ?? null;
+          return value == null ? null : { value, bonus: 0 };
+        })();
+    if (parsed == null || seen.has(matched.stat)) continue;
     seen.add(matched.stat);
-    detected.push({ stat: matched.stat, value });
+    stats.push(
+      isMain && parsed.bonus > 0
+        ? { stat: matched.stat, value: parsed.value, bonus: parsed.bonus }
+        : { stat: matched.stat, value: parsed.value },
+    );
   }
 
-  return detected;
+  return {
+    stats,
+    slot: findSlot(lines),
+    set_key: findSetKey(blob),
+    prefix: findPrefix(blob),
+  };
 }
 
 export function slotForMainStat(stat: GearStatKey, preferred: GearSlot): GearSlot {
@@ -130,22 +265,42 @@ function padSubstats(
   return substats;
 }
 
-export function applyOcrStats<T extends OcrGearFields>(draft: T, detected: DetectedGearStat[]): T {
-  if (detected.length === 0) return draft;
-  const [main, ...rest] = detected;
-  if (!main) return draft;
-  const slot = slotForMainStat(main.stat, draft.slot);
-  const sets = setsForSlot(slot);
-  const setKey = sets.some((set) => set.key === draft.set_key)
-    ? draft.set_key
-    : (sets[0]?.key ?? draft.set_key);
+export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedGearOcr): T {
+  const detected = parsed.stats;
+  if (
+    detected.length === 0 &&
+    parsed.slot == null &&
+    parsed.set_key == null &&
+    parsed.prefix == null
+  ) {
+    return draft;
+  }
+  const main = detected[0];
+  let slot = draft.slot;
+  if (parsed.slot && (!main || SLOT_MAIN_STATS[parsed.slot].includes(main.stat))) {
+    slot = parsed.slot;
+  } else if (main) {
+    slot = slotForMainStat(main.stat, parsed.slot ?? draft.slot);
+  }
+  const slotSets = setsForSlot(slot);
+  let setKey = draft.set_key;
+  if (parsed.set_key && slotSets.some((set) => set.key === parsed.set_key)) {
+    setKey = parsed.set_key;
+  } else if (!slotSets.some((set) => set.key === setKey)) {
+    setKey = slotSets[0]?.key ?? setKey;
+  }
+  const prefix = parsed.prefix ?? draft.prefix;
+  if (!main) {
+    return { ...draft, slot, set_key: setKey, prefix };
+  }
   return {
     ...draft,
     slot,
     set_key: setKey,
+    prefix,
     main_stat: main.stat,
     main_value: main.value,
-    main_bonus: 0,
-    substats: padSubstats(rest),
+    main_bonus: Math.min(main.bonus ?? 0, MAIN_STAT_BONUS_MAX[main.stat] ?? 0),
+    substats: padSubstats(detected.slice(1)),
   };
 }
