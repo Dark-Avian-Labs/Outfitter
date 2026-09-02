@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyOcrStats, parseGearOcr, parseGearOcrText } from './gearOcr.js';
+import { applyOcrStats, mergeGearOcr, parseGearOcr, parseGearOcrText } from './gearOcr.js';
 
 const SCREENSHOT_TEXT = `
 Variant Mythic Gear
@@ -90,6 +90,12 @@ ATK Spd. 69
     expect(parseGearOcrText('ATKSpd. 69')).toEqual([{ stat: 'atkSpd', value: 69 }]);
   });
 
+  it('reads ATK Spd when OCR turns ATK into WK or Spd into 5pd', () => {
+    expect(parseGearOcrText('4 WK Spd. 70')).toEqual([{ stat: 'atkSpd', value: 70 }]);
+    expect(parseGearOcrText('ATK 5pd. 70')).toEqual([{ stat: 'atkSpd', value: 70 }]);
+    expect(parseGearOcrText('WK\nSpd. 70')).toEqual([{ stat: 'atkSpd', value: 70 }]);
+  });
+
   it('rejoins Crit. / Rate and ATK / Spd. when OCR splits at the period', () => {
     expect(
       parseGearOcrText(`
@@ -161,6 +167,58 @@ DEF 256
     });
     expect(parsed.stats.map((entry) => entry.stat)).toEqual(['critRate', 'atkBonus', 'critDmg', 'atkSpd', 'def']);
     expect(parsed.stats[3]).toEqual({ stat: 'atkSpd', value: 79 });
+  });
+
+  it('matches Soulbound Arcana when the title wraps onto a second line', () => {
+    expect(
+      parseGearOcr(`
+Ancient Mythic Gear
+Ancient: Soulbound
+Arcana Bangle
+ATK Bonus 66%
+`),
+    ).toMatchObject({
+      slot: 'bangle',
+      set_key: 'soulbound_arcana',
+      prefix: 'ancient',
+    });
+  });
+
+  it('matches Soulbound when the wrapped Arcana line is garbage', () => {
+    expect(
+      parseGearOcr(`
+AQ Ancient: Soulbound
+LOW some
+7. ATK Bonus 66%
+4 WK Spd. 70
+`),
+    ).toMatchObject({
+      set_key: 'soulbound_arcana',
+      prefix: 'ancient',
+    });
+    expect(parseGearOcrText(`7. ATK Bonus 66%\n4 WK Spd. 70`)).toEqual([
+      { stat: 'atkBonus', value: 66 },
+      { stat: 'atkSpd', value: 70 },
+    ]);
+  });
+
+  it('merges missing stats and title fields from a second OCR pass', () => {
+    const column = parseGearOcr(`
+Variant: Insight Bangle
+Crit. Rate 60%
+ATK Bonus 19.5%
+Crit. DMG 33%
+DEF 256
+`);
+    const sparse = parseGearOcr(`
+ATK Spd. 79
+DEF
+256
+`);
+    const merged = mergeGearOcr(column, sparse);
+    expect(merged.set_key).toBe('the_insight');
+    expect(merged.slot).toBe('bangle');
+    expect(merged.stats.map((entry) => entry.stat)).toEqual(['critRate', 'atkBonus', 'critDmg', 'def', 'atkSpd']);
   });
 });
 
