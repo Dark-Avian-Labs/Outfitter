@@ -46,6 +46,8 @@ const STAT_ALIASES: readonly { pattern: string; stat: GearStatKey }[] = [
   { pattern: 'ATK SPEED', stat: 'atkSpd' },
   { pattern: 'ATK SPD', stat: 'atkSpd' },
   { pattern: 'ATKSPD', stat: 'atkSpd' },
+  { pattern: 'ATK SP', stat: 'atkSpd' },
+  { pattern: 'SPD', stat: 'atkSpd' },
   { pattern: 'CRIT DAMAGE', stat: 'critDmg' },
   { pattern: 'CRIT RATE', stat: 'critRate' },
   { pattern: 'CRIT DMG', stat: 'critDmg' },
@@ -62,6 +64,7 @@ function normalizeOcrText(text: string): string {
     .toUpperCase()
     .replace(/\r\n/g, '\n')
     .replace(/[''`´]/g, '')
+    .replace(/\b5PD\b/g, 'SPD')
     .replace(/\.(?!\d)/g, ' ')
     .replace(/,\s*(?=[A-Z])/g, ' ')
     .replace(/[^A-Z0-9.,%+\n]+/g, ' ')
@@ -118,7 +121,7 @@ function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
     if (before && /[A-Z0-9]/.test(before)) continue;
     const afterIndex = index + alias.pattern.length;
     const after = afterIndex >= line.length ? '' : line[afterIndex];
-    if (after && /[A-Z0-9]/.test(after)) continue;
+    if (after && /[A-Z]/.test(after)) continue;
     return { stat: alias.stat, rest: line.slice(afterIndex) };
   }
   return null;
@@ -134,7 +137,7 @@ function joinSplitAbbrevLines(lines: string[]): string[] {
       index += 1;
       continue;
     }
-    if (line === 'ATK' && next && /^SPD\b/.test(next)) {
+    if (line === 'ATK' && next && /^(SPD|SPEED|5PD)\b/.test(next)) {
       joined.push(`ATK ${next}`);
       index += 1;
       continue;
@@ -155,10 +158,12 @@ function hasPhrase(haystack: string, phrase: string): boolean {
   return true;
 }
 
-const SET_NEEDLES = ALL_SETS.map((set) => ({
-  key: set.key,
-  needle: normalizeOcrText(set.name).replace(/\n/g, ' '),
-})).sort((a, b) => b.needle.length - a.needle.length);
+const SET_NEEDLES = ALL_SETS.flatMap((set) => {
+  const full = normalizeOcrText(set.name).replace(/\n/g, ' ');
+  const needles = [full];
+  if (full.startsWith('THE ')) needles.push(full.slice(4));
+  return needles.map((needle) => ({ key: set.key, needle }));
+}).sort((a, b) => b.needle.length - a.needle.length);
 
 const SLOT_NEEDLES = GEAR_SLOTS.map((slot) => ({
   slot,
