@@ -64,7 +64,9 @@ function normalizeOcrText(text: string): string {
     .toUpperCase()
     .replace(/\r\n/g, '\n')
     .replace(/[''`´]/g, '')
-    .replace(/\b5PD\b/g, 'SPD')
+    .replace(/5PD/g, 'SPD')
+    .replace(/\bSP0\b/g, 'SPD')
+    .replace(/\bW?K(?=\s*SPD)/g, 'ATK')
     .replace(/\.(?!\d)/g, ' ')
     .replace(/,\s*(?=[A-Z])/g, ' ')
     .replace(/[^A-Z0-9.,%+\n]+/g, ' ')
@@ -137,7 +139,7 @@ function joinSplitAbbrevLines(lines: string[]): string[] {
       index += 1;
       continue;
     }
-    if (line === 'ATK' && next && /^(SPD|SPEED|5PD)\b/.test(next)) {
+    if (/^(ATK|WK|TK)$/.test(line) && next && /^(SPD|SPEED|5PD|SP0)\b/.test(next)) {
       joined.push(`ATK ${next}`);
       index += 1;
       continue;
@@ -164,6 +166,25 @@ const SET_NEEDLES = ALL_SETS.flatMap((set) => {
   if (full.startsWith('THE ')) needles.push(full.slice(4));
   return needles.map((needle) => ({ key: set.key, needle }));
 }).sort((a, b) => b.needle.length - a.needle.length);
+
+const SET_WORD_NEEDLES = (() => {
+  const keysByWord = new Map<string, string[]>();
+  for (const set of ALL_SETS) {
+    const words = normalizeOcrText(set.name)
+      .replace(/\n/g, ' ')
+      .split(' ')
+      .filter((word) => word.length >= 5 && word !== 'THE');
+    for (const word of words) {
+      const keys = keysByWord.get(word) ?? [];
+      if (!keys.includes(set.key)) keys.push(set.key);
+      keysByWord.set(word, keys);
+    }
+  }
+  return [...keysByWord.entries()]
+    .filter(([, keys]) => keys.length === 1)
+    .map(([needle, keys]) => ({ key: keys[0]!, needle }))
+    .sort((a, b) => b.needle.length - a.needle.length);
+})();
 
 const SLOT_NEEDLES = GEAR_SLOTS.map((slot) => ({
   slot,
@@ -197,19 +218,36 @@ function findSlot(lines: string[]): GearSlot | null {
 }
 
 function findSetKey(blob: string): string | null {
+  const spaced = blob.replace(/\n/g, ' ');
   for (const { key, needle } of SET_NEEDLES) {
-    if (hasPhrase(blob, needle)) return key;
+    if (hasPhrase(spaced, needle)) return key;
   }
-  const compact = blob.replace(/[\n ]/g, '');
+  const compact = spaced.replace(/ /g, '');
   for (const { key, needle } of SET_NEEDLES) {
     const compactNeedle = needle.replace(/ /g, '');
     if (compactNeedle.length >= 5 && compact.includes(compactNeedle)) return key;
   }
+  for (const { key, needle } of SET_WORD_NEEDLES) {
+    if (hasPhrase(spaced, needle)) return key;
+  }
   return null;
 }
 
-export function parseGearOcrText(text: string): DetectedGearStat[] {
-  return parseGearOcr(text).stats;
+export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
+  const seen = new Set(base.stats.map((entry) => entry.stat));
+  const stats = base.stats.slice();
+  for (const entry of extra.stats) {
+    if (seen.has(entry.stat)) continue;
+    seen.add(entry.stat);
+    stats.push(entry);
+  }
+  return {
+    ...base,
+    stats,
+    slot: base.slot ?? extra.slot,
+    set_key: base.set_key ?? extra.set_key,
+    prefix: base.prefix ?? extra.prefix,
+  };
 }
 
 export function parseGearOcr(text: string): ParsedGearOcr {
@@ -251,6 +289,10 @@ export function parseGearOcr(text: string): ParsedGearOcr {
     set_key: findSetKey(blob),
     prefix: findPrefix(blob),
   };
+}
+
+export function parseGearOcrText(text: string): DetectedGearStat[] {
+  return parseGearOcr(text).stats;
 }
 
 export function slotForMainStat(stat: GearStatKey, preferred: GearSlot): GearSlot {
