@@ -297,7 +297,7 @@ export function SelectDropdown({
         }}
       >
         <span
-          className={`flex min-w-0 flex-1 items-center gap-2 ${value ? 'text-foreground' : 'text-muted'}`}
+          className={`flex min-w-0 flex-1 flex-nowrap items-center gap-2 ${value ? 'text-foreground' : 'text-muted'}`}
           title={label}
         >
           <SelectOptionLabel option={selected} fallback={placeholder} />

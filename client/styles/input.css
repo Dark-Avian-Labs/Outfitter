@@ -1771,6 +1771,20 @@ html.ui-clear .stale-update-banner::after {
   font-size: 12px;
   color: var(--color-muted);
   margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.filter-group .user-menu-select-trigger {
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  border-radius: 0;
+}
+
+.filter-group .user-menu-select-trigger:hover,
+.filter-group .user-menu-select-trigger:focus-visible {
+  border: none;
+  background: transparent;
 }
 
 .filter-icon {
@@ -2041,16 +2055,17 @@ html.ui-clear .stale-update-banner::after {
 
 .stat-gauge__notch {
   position: absolute;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   z-index: 1;
-  width: 8px;
-  height: 8px;
+  width: 10px;
   pointer-events: none;
   background: var(--stat-gauge-empty);
-  transform: translate(-50%, -50%) rotate(45deg);
+  transform: translateX(-50%);
+  clip-path: polygon(0 0, 100% 0, 50% 50%, 100% 100%, 0 100%, 50% 50%);
 }
 
-.form-group span {
+.form-group > span {
   display: block;
   font-size: 12px;
   color: var(--color-muted);
