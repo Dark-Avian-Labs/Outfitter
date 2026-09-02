@@ -12,6 +12,7 @@ import {
   type GearSlot,
   type GearStatKey,
 } from '@shared/catalog';
+import { findDuplicateGear, gearIdentityKey, identityFromGearRow } from '@shared/gearDuplicate';
 import { applyOcrStats } from '@shared/gearOcr';
 import { setsForSlot } from '@shared/sets';
 import { useEffect, useState } from 'react';
@@ -85,6 +86,7 @@ function draftFromGear(gear: GearView | null): GearDraft {
 export function GearFormModal({
   open,
   gear,
+  existingGear,
   heroes,
   error,
   onClose,
@@ -93,6 +95,7 @@ export function GearFormModal({
 }: {
   open: boolean;
   gear: GearView | null;
+  existingGear: GearView[];
   heroes: HeroRow[];
   error: string | null;
   onClose: () => void;
@@ -102,6 +105,7 @@ export function GearFormModal({
   const [draft, setDraft] = useState<GearDraft>(() => draftFromGear(gear));
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [duplicateWarned, setDuplicateWarned] = useState(false);
   const slotSets = setsForSlot(draft.slot);
   const mainOptions = SLOT_MAIN_STATS[draft.slot];
   const bonusMax = MAIN_STAT_BONUS_MAX[draft.main_stat] ?? 0;
@@ -110,6 +114,7 @@ export function GearFormModal({
     if (open) {
       setDraft(draftFromGear(gear));
       setOcrStatus(null);
+      setDuplicateWarned(false);
     }
   }, [gear, open]);
 
@@ -159,6 +164,26 @@ export function GearFormModal({
     window.addEventListener('paste', readClipboardImage);
     return () => window.removeEventListener('paste', readClipboardImage);
   }, [open]);
+
+  const identity = identityFromGearRow(draft);
+  const identityKey = gearIdentityKey(identity);
+  const duplicate = findDuplicateGear(existingGear, identity, gear?.id);
+
+  useEffect(() => {
+    setDuplicateWarned(false);
+  }, [identityKey]);
+
+  function saveDraft(): void {
+    const payload = {
+      ...draft,
+      substats: draft.substats.filter((sub) => sub.value > 0),
+    };
+    if (duplicate && !duplicateWarned) {
+      setDuplicateWarned(true);
+      return;
+    }
+    void onSave(payload);
+  }
 
   return (
     <Modal open={open} onClose={onClose} className="glass-modal-surface max-w-2xl">
@@ -299,6 +324,14 @@ export function GearFormModal({
         />
       </div>
       {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
+      {duplicateWarned && duplicate ? (
+        <p
+          className="mt-3 rounded-lg border border-[var(--color-warning)] bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] px-3 py-2 text-sm"
+          role="status"
+        >
+          A piece with the same type, set, and stats already exists. Save anyway to keep a copy.
+        </p>
+      ) : null}
       <div className="modal-actions">
         {onDelete ? (
           <Button variant="danger" onClick={() => void onDelete()}>
@@ -308,17 +341,8 @@ export function GearFormModal({
         <Button variant="cancel" onClick={onClose}>
           Cancel
         </Button>
-        <Button
-          variant="accent"
-          disabled={ocrBusy}
-          onClick={() =>
-            void onSave({
-              ...draft,
-              substats: draft.substats.filter((sub) => sub.value > 0),
-            })
-          }
-        >
-          Save
+        <Button variant="accent" disabled={ocrBusy} onClick={saveDraft}>
+          {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
         </Button>
       </div>
     </Modal>

@@ -29,10 +29,25 @@ gearRouter.post(
       sendError(res, decoded);
       return;
     }
-    const result = await recognizeGearStats(decoded);
-    json(res, result);
+    try {
+      const result = await recognizeGearStats(decoded);
+      json(res, result);
+    } catch (error) {
+      const status = errorHttpStatus(error);
+      const message =
+        status === 503 && error instanceof Error
+          ? error.message
+          : 'Could not read that screenshot.';
+      sendError(res, message, status);
+    }
   }),
 );
+
+function errorHttpStatus(error: unknown): number {
+  if (!error || typeof error !== 'object' || !('status' in error)) return 500;
+  const status = error.status;
+  return typeof status === 'number' && status >= 400 && status < 600 ? status : 500;
+}
 
 function isGearStat(value: unknown): value is GearStatKey {
   return typeof value === 'string' && (GEAR_STAT_KEYS as readonly string[]).includes(value);
