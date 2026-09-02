@@ -16,3 +16,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.1.0** `chore` [#6](https://github.com/Dark-Avian-Labs/Outfitter/pull/6): feat/ui glass table and gauges
 - **v1.1.1** `chore` [#7](https://github.com/Dark-Avian-Labs/Outfitter/pull/7): fix/ui inline filters and hourglass notches
 - **v1.2.0** `chore` [#8](https://github.com/Dark-Avian-Labs/Outfitter/pull/8): feat/ocr title bonus and delete confirm
+- **v1.2.1** `chore` [#9](https://github.com/Dark-Avian-Labs/Outfitter/pull/9): fix/ocr the sets and atk spd
