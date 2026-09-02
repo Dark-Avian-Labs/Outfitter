@@ -9,6 +9,8 @@ import {
   SLOT_LABELS,
   SLOT_MAIN_STATS,
   formatStatValue,
+  gearEmptySlotSrc,
+  gearSetBadgeSrc,
   type GearSlot,
   type GearStatKey,
 } from '@shared/catalog';
@@ -196,7 +198,11 @@ export function GearFormModal({
         <FieldSelect
           label="Type"
           value={draft.slot}
-          options={GEAR_SLOTS.map((slot) => ({ value: slot, label: SLOT_LABELS[slot] }))}
+          options={GEAR_SLOTS.map((slot) => ({
+            value: slot,
+            label: SLOT_LABELS[slot],
+            iconSrc: gearEmptySlotSrc(slot),
+          }))}
           onChange={(slot) => {
             const next = slot as GearSlot;
             const sets = setsForSlot(next);
@@ -215,7 +221,11 @@ export function GearFormModal({
         <FieldSelect
           label="Set"
           value={draft.set_key}
-          options={slotSets.map((set) => ({ value: set.key, label: set.name }))}
+          options={slotSets.map((set) => ({
+            value: set.key,
+            label: set.name,
+            iconSrc: gearSetBadgeSrc(set.key),
+          }))}
           onChange={(set_key) => setDraft({ ...draft, set_key })}
         />
         <FieldSelect

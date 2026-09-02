@@ -14,6 +14,25 @@ import { MaterialSymbol } from './MaterialSymbol';
 export interface SelectDropdownOption {
   value: string;
   label: string;
+  iconSrc?: string;
+}
+
+function SelectOptionLabel({
+  option,
+  fallback,
+}: {
+  option?: SelectDropdownOption;
+  fallback: string;
+}) {
+  const label = option?.label ?? fallback;
+  return (
+    <>
+      {option?.iconSrc ? (
+        <img src={option.iconSrc} alt="" className="select-dropdown-icon" />
+      ) : null}
+      <span className="min-w-0 truncate">{label}</span>
+    </>
+  );
 }
 
 interface MenuRect {
@@ -245,7 +264,7 @@ export function SelectDropdown({
                   setOpen(false);
                 }}
               >
-                {opt.label}
+                <SelectOptionLabel option={opt} fallback={opt.label} />
               </button>
             );
           })}
@@ -277,8 +296,11 @@ export function SelectDropdown({
           }
         }}
       >
-        <span className="min-w-0 flex-1 truncate" title={label}>
-          <span className={value ? 'text-foreground' : 'text-muted'}>{label}</span>
+        <span
+          className={`flex min-w-0 flex-1 items-center gap-2 ${value ? 'text-foreground' : 'text-muted'}`}
+          title={label}
+        >
+          <SelectOptionLabel option={selected} fallback={placeholder} />
         </span>
         <span aria-hidden className="text-muted inline-flex shrink-0 items-center justify-center">
           {open ? (

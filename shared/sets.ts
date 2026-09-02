@@ -158,7 +158,11 @@ export const SET_BY_KEY: Record<string, GearSetDef> = Object.fromEntries(
   ALL_SETS.map((set) => [set.key, set]),
 );
 
+export function setsSortedByTier(sets: readonly GearSetDef[] = ALL_SETS): GearSetDef[] {
+  return sets.slice().sort((a, b) => a.tier - b.tier);
+}
+
 export function setsForSlot(slot: 'weapon' | 'armor' | 'bangle' | 'amulet' | 'ring'): GearSetDef[] {
   const side = slot === 'weapon' || slot === 'armor' ? 'left' : 'right';
-  return ALL_SETS.filter((set) => set.side === side);
+  return setsSortedByTier(ALL_SETS.filter((set) => set.side === side));
 }
