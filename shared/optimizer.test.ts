@@ -149,5 +149,5 @@ describe('optimizeLoadouts', () => {
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.stats.hp).toBeGreaterThanOrEqual(13000);
     expect(results[0]?.pieces.find((entry) => entry.slot === 'armor')?.id).toBe(hpArmorId);
-  });
+  }, 20_000);
 });

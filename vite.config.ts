@@ -59,6 +59,10 @@ export default defineConfig(({ mode }) => {
           target: devApiTarget,
           changeOrigin: true,
         },
+        '/hero-images': {
+          target: devApiTarget,
+          changeOrigin: true,
+        },
       },
     },
   };

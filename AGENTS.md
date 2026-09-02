@@ -23,7 +23,7 @@ Hero portraits and class/faction icons live in `HERO_IMAGES_DIR` (served at `/he
 
 ## Codex catalog
 
-Hero identity and Lv.60 A0 combat stats come from Codex's Watcher of Realms DB (`CODEX_WOR_DB_PATH`, read-only). Codex scrapes wiki infobox fields (`hp`, `atk`, `def`, `atkinterval`, `rr_auto`, `rr_attack`, `rr_attacked`) in the `fandomHeroStats` pipeline step. Outfitter copies those rows on boot if its catalog is empty, from the Admin page (settings menu, `apps.outfitter === 'admin'`), or via `POST /api/admin/import-catalog` / `pnpm run catalog:import`.
+Hero identity and Lv.60 A0 combat stats come from Codex's Watcher of Realms DB (`CODEX_WOR_DB_PATH`, read-only). Codex scrapes wiki infobox fields (`hp`, `atk`, `def`, `atkinterval`, `rr_auto`, `rr_attack`, `rr_attacked`) in the `fandomHeroStats` pipeline step. Outfitter copies those rows on boot if its catalog is empty, from the Admin page (user menu, `apps.outfitter === 'admin'`), or via `POST /api/admin/import-catalog` / `pnpm run catalog:import`.
 
 If wiki stats are missing, hero bases are 0 until the user edits them on the Outfit tab. Edits persist per game account in `account_hero_stats`.
 

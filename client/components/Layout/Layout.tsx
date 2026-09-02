@@ -1,3 +1,5 @@
+import { buildClerkProfileAppearance } from '@/clerk';
+import { useClerk } from '@clerk/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
@@ -15,28 +17,83 @@ import { Menu } from '../../components/ui/Menu';
 import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
-import { AuthControls } from '../../features/auth/AuthControls';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
 import { HexSideBackground } from './HexSideBackground';
 import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
+
+function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: () => void }) {
+  const { mode } = useTheme();
+  const { auth } = useAuth();
+  const clerk = useClerk();
+  const isLoggedIn = auth.status === 'authenticated';
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Link to={APP_PATHS.signIn} className="user-menu-item" role="menuitem" onClick={onClose}>
+          Sign in
+        </Link>
+        <div className="user-menu-divider" role="separator" />
+        <UiStyleSelector />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="user-menu-item text-left"
+        role="menuitem"
+        onClick={() => {
+          onClose();
+          clerk.openUserProfile({
+            appearance: buildClerkProfileAppearance(mode),
+          });
+        }}
+      >
+        Profile
+      </button>
+      <div className="user-menu-divider" role="separator" />
+      <UiStyleSelector />
+      {isAdmin ? (
+        <Link to={APP_PATHS.admin} className="user-menu-item" role="menuitem" onClick={onClose}>
+          Admin
+        </Link>
+      ) : null}
+      <button
+        type="button"
+        className="user-menu-item text-left"
+        role="menuitem"
+        onClick={() => {
+          onClose();
+          void clerk.signOut({ redirectUrl: APP_PATHS.home });
+        }}
+      >
+        Logout
+      </button>
+    </>
+  );
+}
 
 export function Layout() {
   const { mode, toggleMode } = useTheme();
   const { auth } = useAuth();
   const currentYear = new Date().getFullYear();
-  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const userMenuId = 'outfitter-user-menu';
   const isAdmin = auth.status === 'authenticated' && auth.isAdmin;
 
   useEffect(() => {
-    if (!settingsMenuOpen) return undefined;
+    if (!userMenuOpen) return undefined;
     const handlePointerDown = (event: MouseEvent) => {
       if (!menuRef.current?.contains(event.target as Node)) {
-        setSettingsMenuOpen(false);
+        setUserMenuOpen(false);
       }
     };
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSettingsMenuOpen(false);
+      if (event.key === 'Escape') setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
@@ -44,7 +101,7 @@ export function Layout() {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [settingsMenuOpen]);
+  }, [userMenuOpen]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -60,7 +117,6 @@ export function Layout() {
           <div className="justify-self-center" />
 
           <div className="flex flex-wrap items-center justify-end gap-3">
-            {CLERK_ENABLED && <AuthControls />}
             <button
               type="button"
               className="icon-toggle-btn"
@@ -68,36 +124,38 @@ export function Layout() {
               aria-label={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
               title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
             >
-              <span aria-hidden="true">{mode === 'dark' ? '☀' : '☾'}</span>
+              {mode === 'dark' ? (
+                <MaterialSymbol name="light_mode" filled />
+              ) : (
+                <MaterialSymbol name="dark_mode" filled />
+              )}
             </button>
             <div ref={menuRef} className="relative">
               <button
                 type="button"
                 className="icon-toggle-btn"
-                aria-expanded={settingsMenuOpen}
-                aria-controls="settings-menu"
-                aria-label="Open settings menu"
-                onClick={() => setSettingsMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                aria-controls={userMenuOpen ? userMenuId : undefined}
+                aria-label="Open user menu"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
               >
-                <MaterialSymbol name="settings" />
+                <MaterialSymbol name="person" filled />
               </button>
-              {settingsMenuOpen && (
-                <Menu id="settings-menu">
-                  {isAdmin ? (
-                    <>
-                      <Link
-                        to={APP_PATHS.admin}
-                        className="user-menu-item"
-                        onClick={() => setSettingsMenuOpen(false)}
-                      >
-                        Admin
-                      </Link>
-                      <div className="user-menu-divider" role="separator" />
-                    </>
-                  ) : null}
-                  <UiStyleSelector />
+              {userMenuOpen ? (
+                <Menu>
+                  <div id={userMenuId} role="menu" aria-orientation="vertical">
+                    {CLERK_ENABLED ? (
+                      <ClerkUserMenuItems
+                        isAdmin={isAdmin}
+                        onClose={() => setUserMenuOpen(false)}
+                      />
+                    ) : (
+                      <UiStyleSelector />
+                    )}
+                  </div>
                 </Menu>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
