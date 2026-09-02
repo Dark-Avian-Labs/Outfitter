@@ -1,9 +1,7 @@
-import path from 'node:path';
-
 import Tesseract from 'tesseract.js';
 
 import { parseGearOcrText, type DetectedGearStat } from '../../shared/gearOcr.js';
-import { ensureEngTrainedData } from './tessdata.js';
+import { tessWorkerOptions } from './tessdata.js';
 
 type OcrWorker = Awaited<ReturnType<typeof Tesseract.createWorker>>;
 
@@ -12,12 +10,7 @@ let workerPromise: Promise<OcrWorker> | null = null;
 async function getWorker(): Promise<OcrWorker> {
   if (!workerPromise) {
     workerPromise = (async () => {
-      const trained = await ensureEngTrainedData();
-      const worker = await Tesseract.createWorker('eng', 1, {
-        langPath: path.dirname(trained),
-        gzip: false,
-        cacheMethod: 'none',
-      });
+      const worker = await Tesseract.createWorker('eng', 1, tessWorkerOptions());
       await worker.setParameters({
         tessedit_char_whitelist:
           '0123456789.%ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ',

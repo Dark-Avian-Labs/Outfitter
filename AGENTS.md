@@ -43,7 +43,7 @@ ATK Speed: inherent 100, gear adds on top. Interval `I = I0 * (0.28 + 0.72 * 200
 
 Healing Effect uses `1 + 1.5 * HE / (100 + HE)` for scoring. `% Rage Regen` does not increase Rage Regen (Auto).
 
-Add-gear accepts Ctrl+V of a Watcher of Realms gear screenshot. OCR only fills stat types and values (`server/ocr/`). English Tesseract data is downloaded to `data/tessdata` on first use if it is not already on disk. Slot, set, prefix, and exclusives stay manual.
+Add-gear accepts Ctrl+V of a Watcher of Realms gear screenshot. OCR only fills stat types and values (`server/ocr/`). If `server/ocr/tessdata/eng.traineddata` is missing, Tesseract.js fetches English data on first use and caches it under `data/tessdata`. Slot, set, prefix, and exclusives stay manual.
 
 In-game piece art and set badges live in `public/gear/` (from [prospector.gg/gearsets](https://prospector.gg/gearsets/)). Piece art already includes the set badge, so tiles do not overlay it. Standalone badges in `public/gear/sets/` are kept for later filter UI. Empty slot silhouettes are `public/gear/slots/{slot}.webp` (type filters, unequipped loadout slots, missing piece fallback).
 
