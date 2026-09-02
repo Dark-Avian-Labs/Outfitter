@@ -108,6 +108,7 @@ export function GearFormModal({
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [duplicateWarned, setDuplicateWarned] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const slotSets = setsForSlot(draft.slot);
   const mainOptions = SLOT_MAIN_STATS[draft.slot];
   const bonusMax = MAIN_STAT_BONUS_MAX[draft.main_stat] ?? 0;
@@ -117,6 +118,7 @@ export function GearFormModal({
       setDraft(draftFromGear(gear));
       setOcrStatus(null);
       setDuplicateWarned(false);
+      setConfirmDelete(false);
     }
   }, [gear, open]);
 
@@ -141,6 +143,9 @@ export function GearFormModal({
         });
         const body = (await response.json().catch(() => null)) as {
           stats?: { stat: GearStatKey; value: number }[];
+          slot?: GearDraft['slot'] | null;
+          set_key?: string | null;
+          prefix?: GearDraft['prefix'] | null;
           error?: string;
         } | null;
         if (!response.ok) {
@@ -152,7 +157,14 @@ export function GearFormModal({
           setOcrStatus('No stats found. Try a tighter crop of the main and sub stats.');
           return;
         }
-        setDraft((current) => applyOcrStats(current, stats));
+        setDraft((current) =>
+          applyOcrStats(current, {
+            stats,
+            slot: body?.slot ?? null,
+            set_key: body?.set_key ?? null,
+            prefix: body?.prefix ?? null,
+          }),
+        );
         setOcrStatus(
           `Filled ${stats.length} stat${stats.length === 1 ? '' : 's'} from screenshot.`,
         );
@@ -188,173 +200,204 @@ export function GearFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} className="glass-modal-surface max-w-2xl">
-      <h2>{gear ? 'Edit gear' : 'Add gear'}</h2>
-      <p className="text-muted mt-1 text-sm">
-        Ctrl+V a gear screenshot to fill stat types and values. Slot, set, and prefix stay manual.
-      </p>
-      {ocrStatus ? <p className="mt-2 text-sm">{ocrStatus}</p> : null}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <FieldSelect
-          label="Type"
-          value={draft.slot}
-          options={GEAR_SLOTS.map((slot) => ({
-            value: slot,
-            label: SLOT_LABELS[slot],
-            iconSrc: gearEmptySlotSrc(slot),
-          }))}
-          onChange={(slot) => {
-            const next = slot as GearSlot;
-            const sets = setsForSlot(next);
-            setDraft({
-              ...draft,
-              slot: next,
-              set_key: sets.some((set) => set.key === draft.set_key)
-                ? draft.set_key
-                : (sets[0]?.key ?? ''),
-              main_stat: SLOT_MAIN_STATS[next].includes(draft.main_stat)
-                ? draft.main_stat
-                : SLOT_MAIN_STATS[next][0],
-            });
-          }}
-        />
-        <FieldSelect
-          label="Set"
-          value={draft.set_key}
-          options={slotSets.map((set) => ({
-            value: set.key,
-            label: set.name,
-            iconSrc: gearSetBadgeSrc(set.key),
-          }))}
-          onChange={(set_key) => setDraft({ ...draft, set_key })}
-        />
-        <FieldSelect
-          label="Prefix"
-          value={draft.prefix}
-          options={GEAR_PREFIXES.map((prefix) => ({
-            value: prefix,
-            label: prefix === 'none' ? 'None' : prefix[0].toUpperCase() + prefix.slice(1),
-          }))}
-          onChange={(prefix) => setDraft({ ...draft, prefix: prefix as GearDraft['prefix'] })}
-        />
-        <FieldSelect
-          label="Main stat"
-          value={draft.main_stat}
-          options={mainOptions.map((stat) => ({ value: stat, label: GEAR_STAT_LABELS[stat] }))}
-          onChange={(main_stat) =>
-            setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
-          }
-        />
-        <label className="form-group block">
-          <span>Main value</span>
-          <input
-            className="form-input mt-1 w-full"
-            type="number"
-            min={1}
-            value={draft.main_value}
-            onChange={(event) => setDraft({ ...draft, main_value: Number(event.target.value) })}
+    <>
+      <Modal
+        open={open}
+        onClose={() => {
+          if (confirmDelete) setConfirmDelete(false);
+          else onClose();
+        }}
+        className="glass-modal-surface max-w-2xl"
+      >
+        <h2>{gear ? 'Edit gear' : 'Add gear'}</h2>
+        <p className="text-muted mt-1 text-sm">
+          Ctrl+V a gear screenshot to fill type, set, prefix, and stats.
+        </p>
+        {ocrStatus ? <p className="mt-2 text-sm">{ocrStatus}</p> : null}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <FieldSelect
+            label="Type"
+            value={draft.slot}
+            options={GEAR_SLOTS.map((slot) => ({
+              value: slot,
+              label: SLOT_LABELS[slot],
+              iconSrc: gearEmptySlotSrc(slot),
+            }))}
+            onChange={(slot) => {
+              const next = slot as GearSlot;
+              const sets = setsForSlot(next);
+              setDraft({
+                ...draft,
+                slot: next,
+                set_key: sets.some((set) => set.key === draft.set_key)
+                  ? draft.set_key
+                  : (sets[0]?.key ?? ''),
+                main_stat: SLOT_MAIN_STATS[next].includes(draft.main_stat)
+                  ? draft.main_stat
+                  : SLOT_MAIN_STATS[next][0],
+              });
+            }}
           />
-        </label>
-        <FieldSelect
-          label={`Main bonus (0–${bonusMax})`}
-          value={String(Math.min(draft.main_bonus, bonusMax))}
-          options={Array.from({ length: bonusMax + 1 }, (_, bonus) => ({
-            value: String(bonus),
-            label: bonus === 0 ? '0' : `+${formatStatValue(draft.main_stat, bonus)}`,
-          }))}
-          onChange={(bonus) => setDraft({ ...draft, main_bonus: Number(bonus) })}
-        />
-      </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {draft.substats.map((sub, index) => (
-          <div key={index} className="grid grid-cols-[1fr_6rem] gap-2">
-            <FieldSelect
-              label={`Substat ${index + 1}`}
-              value={sub.stat}
-              options={GEAR_STAT_KEYS.map((stat) => ({
-                value: stat,
-                label: GEAR_STAT_LABELS[stat],
-              }))}
-              onChange={(stat) => {
-                const substats = [...draft.substats];
-                substats[index] = { ...sub, stat: stat as GearStatKey };
-                setDraft({ ...draft, substats });
-              }}
+          <FieldSelect
+            label="Set"
+            value={draft.set_key}
+            options={slotSets.map((set) => ({
+              value: set.key,
+              label: set.name,
+              iconSrc: gearSetBadgeSrc(set.key),
+            }))}
+            onChange={(set_key) => setDraft({ ...draft, set_key })}
+          />
+          <FieldSelect
+            label="Prefix"
+            value={draft.prefix}
+            options={GEAR_PREFIXES.map((prefix) => ({
+              value: prefix,
+              label: prefix === 'none' ? 'None' : prefix[0].toUpperCase() + prefix.slice(1),
+            }))}
+            onChange={(prefix) => setDraft({ ...draft, prefix: prefix as GearDraft['prefix'] })}
+          />
+          <FieldSelect
+            label="Main stat"
+            value={draft.main_stat}
+            options={mainOptions.map((stat) => ({ value: stat, label: GEAR_STAT_LABELS[stat] }))}
+            onChange={(main_stat) =>
+              setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
+            }
+          />
+          <label className="form-group block">
+            <span>Main value</span>
+            <input
+              className="form-input mt-1 w-full"
+              type="number"
+              min={1}
+              value={draft.main_value}
+              onChange={(event) => setDraft({ ...draft, main_value: Number(event.target.value) })}
             />
-            <label className="form-group block">
-              <span>Value</span>
-              <input
-                className="form-input mt-1 w-full"
-                type="number"
-                min={0}
-                value={sub.value}
-                onChange={(event) => {
+          </label>
+          <FieldSelect
+            label={`Main bonus (0–${bonusMax})`}
+            value={String(Math.min(draft.main_bonus, bonusMax))}
+            options={Array.from({ length: bonusMax + 1 }, (_, bonus) => ({
+              value: String(bonus),
+              label: bonus === 0 ? '0' : `+${formatStatValue(draft.main_stat, bonus)}`,
+            }))}
+            onChange={(bonus) => setDraft({ ...draft, main_bonus: Number(bonus) })}
+          />
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {draft.substats.map((sub, index) => (
+            <div key={index} className="grid grid-cols-[1fr_6rem] gap-2">
+              <FieldSelect
+                label={`Substat ${index + 1}`}
+                value={sub.stat}
+                options={GEAR_STAT_KEYS.map((stat) => ({
+                  value: stat,
+                  label: GEAR_STAT_LABELS[stat],
+                }))}
+                onChange={(stat) => {
                   const substats = [...draft.substats];
-                  substats[index] = { ...sub, value: Number(event.target.value) };
+                  substats[index] = { ...sub, stat: stat as GearStatKey };
                   setDraft({ ...draft, substats });
                 }}
               />
-            </label>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <FieldSelect
-          label="Hero exclusive"
-          value={draft.exclusive_hero_slug}
-          options={[
-            { value: '', label: 'None' },
-            ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
-          ]}
-          onChange={(exclusive_hero_slug) =>
-            setDraft({
-              ...draft,
-              exclusive_hero_slug,
-              exclusive_faction: exclusive_hero_slug ? '' : draft.exclusive_faction,
-            })
-          }
-        />
-        <FieldSelect
-          label="Faction exclusive"
-          value={draft.exclusive_faction}
-          options={[
-            { value: '', label: 'None' },
-            ...FACTIONS.filter((faction) => faction !== 'unaffiliated').map((faction) => ({
-              value: faction,
-              label: FACTION_DISPLAY_NAMES[faction],
-            })),
-          ]}
-          onChange={(exclusive_faction) =>
-            setDraft({
-              ...draft,
-              exclusive_faction,
-              exclusive_hero_slug: exclusive_faction ? '' : draft.exclusive_hero_slug,
-            })
-          }
-        />
-      </div>
-      {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
-      {duplicateWarned && duplicate ? (
-        <p
-          className="mt-3 rounded-lg border border-[var(--color-warning)] bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] px-3 py-2 text-sm"
-          role="status"
-        >
-          A piece with the same type, set, and stats already exists. Save anyway to keep a copy.
-        </p>
-      ) : null}
-      <div className="modal-actions">
-        {onDelete ? (
-          <Button variant="danger" onClick={() => void onDelete()}>
+              <label className="form-group block">
+                <span>Value</span>
+                <input
+                  className="form-input mt-1 w-full"
+                  type="number"
+                  min={0}
+                  value={sub.value}
+                  onChange={(event) => {
+                    const substats = [...draft.substats];
+                    substats[index] = { ...sub, value: Number(event.target.value) };
+                    setDraft({ ...draft, substats });
+                  }}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <FieldSelect
+            label="Hero exclusive"
+            value={draft.exclusive_hero_slug}
+            options={[
+              { value: '', label: 'None' },
+              ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
+            ]}
+            onChange={(exclusive_hero_slug) =>
+              setDraft({
+                ...draft,
+                exclusive_hero_slug,
+                exclusive_faction: exclusive_hero_slug ? '' : draft.exclusive_faction,
+              })
+            }
+          />
+          <FieldSelect
+            label="Faction exclusive"
+            value={draft.exclusive_faction}
+            options={[
+              { value: '', label: 'None' },
+              ...FACTIONS.filter((faction) => faction !== 'unaffiliated').map((faction) => ({
+                value: faction,
+                label: FACTION_DISPLAY_NAMES[faction],
+              })),
+            ]}
+            onChange={(exclusive_faction) =>
+              setDraft({
+                ...draft,
+                exclusive_faction,
+                exclusive_hero_slug: exclusive_faction ? '' : draft.exclusive_hero_slug,
+              })
+            }
+          />
+        </div>
+        {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
+        {duplicateWarned && duplicate ? (
+          <p
+            className="mt-3 rounded-lg border border-[var(--color-warning)] bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] px-3 py-2 text-sm"
+            role="status"
+          >
+            A piece with the same type, set, and stats already exists. Save anyway to keep a copy.
+          </p>
+        ) : null}
+        <div className="modal-actions">
+          {onDelete ? (
+            <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+              Delete
+            </Button>
+          ) : null}
+          <Button variant="cancel" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="accent" disabled={ocrBusy} onClick={saveDraft}>
+            {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
+          </Button>
+        </div>
+      </Modal>
+      <Modal
+        open={open && confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        className="glass-modal-surface max-w-md"
+      >
+        <h2>Delete this piece?</h2>
+        <p className="text-muted mt-2 text-sm">This cannot be undone.</p>
+        <div className="modal-actions">
+          <Button variant="cancel" onClick={() => setConfirmDelete(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setConfirmDelete(false);
+              void onDelete?.();
+            }}
+          >
             Delete
           </Button>
-        ) : null}
-        <Button variant="cancel" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="accent" disabled={ocrBusy} onClick={saveDraft}>
-          {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
-        </Button>
-      </div>
-    </Modal>
+        </div>
+      </Modal>
+    </>
   );
 }
