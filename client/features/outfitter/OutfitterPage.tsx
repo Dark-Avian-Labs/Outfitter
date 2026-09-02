@@ -10,9 +10,10 @@ import {
   SLOT_LABELS,
   formatStatValue,
   gearEmptySlotSrc,
+  gearSetBadgeSrc,
 } from '@shared/catalog';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
-import { LEFT_SETS, RIGHT_SETS, SET_BY_KEY } from '@shared/sets';
+import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '../../components/ui/Button';
@@ -311,7 +312,11 @@ export function OutfitterPage() {
               value={setFilter}
               options={[
                 { value: '', label: 'All sets' },
-                ...Object.values(SET_BY_KEY).map((set) => ({ value: set.key, label: set.name })),
+                ...setsSortedByTier(ALL_SETS).map((set) => ({
+                  value: set.key,
+                  label: set.name,
+                  iconSrc: gearSetBadgeSrc(set.key),
+                })),
               ]}
               onChange={setSetFilter}
             />
@@ -350,71 +355,73 @@ export function OutfitterPage() {
             </div>
           </div>
           <div className="table-container">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>
-                  <th />
-                  <th>Type</th>
-                  <th>Set</th>
-                  <th>Main</th>
-                  <th>Stats</th>
-                  <th>Equipped</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredGear.map((piece) => (
-                  <tr
-                    key={piece.id}
-                    className="cursor-pointer border-t border-[var(--color-glass-divider)] hover:bg-[var(--color-glass-hover)]"
-                    onClick={() => {
-                      setEditingGear(piece);
-                      setFormError(null);
-                      setGearFormOpen(true);
-                    }}
-                  >
-                    <td className="py-2">
-                      <GearTile gear={piece} size={56} />
-                    </td>
-                    <td>{SLOT_LABELS[piece.slot]}</td>
-                    <td>{SET_BY_KEY[piece.set_key]?.name ?? piece.set_key}</td>
-                    <td>
-                      {GEAR_STAT_LABELS[piece.main_stat]}{' '}
-                      {formatStatValue(piece.main_stat, piece.main_value + piece.main_bonus)}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex min-w-[16rem] flex-col gap-1">
-                        {[
-                          piece.sub1_stat && piece.sub1_value != null
-                            ? { stat: piece.sub1_stat, value: piece.sub1_value }
-                            : null,
-                          piece.sub2_stat && piece.sub2_value != null
-                            ? { stat: piece.sub2_stat, value: piece.sub2_value }
-                            : null,
-                          piece.sub3_stat && piece.sub3_value != null
-                            ? { stat: piece.sub3_stat, value: piece.sub3_value }
-                            : null,
-                          piece.sub4_stat && piece.sub4_value != null
-                            ? { stat: piece.sub4_stat, value: piece.sub4_value }
-                            : null,
-                        ]
-                          .filter(
-                            (entry): entry is { stat: GearView['main_stat']; value: number } =>
-                              entry != null,
-                          )
-                          .map((entry, index) => (
-                            <StatGauge
-                              key={`${piece.id}-${index}`}
-                              stat={entry.stat}
-                              value={entry.value}
-                            />
-                          ))}
-                      </div>
-                    </td>
-                    <td>{piece.equipped_hero_name ?? '—'}</td>
+            <div className="table-scroll">
+              <table className="gear-table">
+                <thead>
+                  <tr>
+                    <th />
+                    <th>Type</th>
+                    <th>Set</th>
+                    <th>Main</th>
+                    <th className="stats-col">Stats</th>
+                    <th>Equipped</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredGear.map((piece) => (
+                    <tr
+                      key={piece.id}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setEditingGear(piece);
+                        setFormError(null);
+                        setGearFormOpen(true);
+                      }}
+                    >
+                      <td>
+                        <GearTile gear={piece} size={56} />
+                      </td>
+                      <td>{SLOT_LABELS[piece.slot]}</td>
+                      <td>{SET_BY_KEY[piece.set_key]?.name ?? piece.set_key}</td>
+                      <td>
+                        {GEAR_STAT_LABELS[piece.main_stat]}{' '}
+                        {formatStatValue(piece.main_stat, piece.main_value + piece.main_bonus)}
+                      </td>
+                      <td className="stats-col">
+                        <div className="flex min-w-[16rem] flex-col gap-1">
+                          {[
+                            piece.sub1_stat && piece.sub1_value != null
+                              ? { stat: piece.sub1_stat, value: piece.sub1_value }
+                              : null,
+                            piece.sub2_stat && piece.sub2_value != null
+                              ? { stat: piece.sub2_stat, value: piece.sub2_value }
+                              : null,
+                            piece.sub3_stat && piece.sub3_value != null
+                              ? { stat: piece.sub3_stat, value: piece.sub3_value }
+                              : null,
+                            piece.sub4_stat && piece.sub4_value != null
+                              ? { stat: piece.sub4_stat, value: piece.sub4_value }
+                              : null,
+                          ]
+                            .filter(
+                              (entry): entry is { stat: GearView['main_stat']; value: number } =>
+                                entry != null,
+                            )
+                            .map((entry, index) => (
+                              <StatGauge
+                                key={`${piece.id}-${index}`}
+                                stat={entry.stat}
+                                value={entry.value}
+                              />
+                            ))}
+                        </div>
+                      </td>
+                      <td>{piece.equipped_hero_name ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       ) : null}
@@ -483,188 +490,201 @@ export function OutfitterPage() {
               ))}
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredEquipmentHeroes.map((hero) => (
-              <button
-                key={hero.slug}
-                type="button"
-                className="glass-surface p-4 text-left"
-                onClick={() => void openHero(hero)}
-              >
-                <div className="flex items-center gap-3">
-                  {hero.portrait_path ? (
-                    <img
-                      src={hero.portrait_path}
-                      alt=""
-                      className="h-12 w-12 rounded object-cover"
-                    />
-                  ) : null}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
-                      <div className="font-semibold">{hero.name}</div>
-                    </div>
-                    <div className="text-muted text-xs">
-                      {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
+          <div className="table-container">
+            <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredEquipmentHeroes.map((hero) => (
+                <button
+                  key={hero.slug}
+                  type="button"
+                  className="rounded-[var(--radius-ui)] p-4 text-left hover:bg-[var(--color-glass-hover)]"
+                  onClick={() => void openHero(hero)}
+                >
+                  <div className="flex items-center gap-3">
+                    {hero.portrait_path ? (
+                      <img
+                        src={hero.portrait_path}
+                        alt=""
+                        className="h-12 w-12 rounded object-cover"
+                      />
+                    ) : null}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
+                        <div className="font-semibold">{hero.name}</div>
+                      </div>
+                      <div className="text-muted text-xs">
+                        {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
+            {filteredEquipmentHeroes.length === 0 ? (
+              <p className="text-muted px-4 pb-4 text-sm">
+                No saved loadouts yet. Calculate one on the Outfit tab.
+              </p>
+            ) : null}
           </div>
-          {filteredEquipmentHeroes.length === 0 ? (
-            <p className="text-muted mt-4 text-sm">
-              No saved loadouts yet. Calculate one on the Outfit tab.
-            </p>
-          ) : null}
         </>
       ) : null}
 
       {tab === 'outfit' ? (
-        <div className="grid gap-6 lg:grid-cols-[28rem_1fr]">
-          <div className="glass-surface min-w-0 p-4">
-            <FieldSelect
-              className="w-full min-w-0"
-              label="Hero"
-              value={outfitHero}
-              options={[
-                { value: '', label: 'Select hero' },
-                ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
-              ]}
-              onChange={setOutfitHero}
-            />
-            {heroDraft ? (
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                {(
-                  [
-                    ['hp', 'HP'],
-                    ['atk', 'ATK'],
-                    ['def', 'DEF'],
-                    ['atk_interval', 'Interval'],
-                    ['rr_auto', 'RR Auto'],
-                  ] as const
-                ).map(([key, label]) => (
-                  <label key={key} className="form-group block">
-                    <span>{label}</span>
-                    <input
-                      className="form-input mt-1 w-full"
-                      type="number"
-                      value={heroDraft[key]}
-                      onChange={(event) =>
-                        setHeroDraft({ ...heroDraft, [key]: Number(event.target.value) })
-                      }
-                      onBlur={() => void saveHeroStats()}
-                    />
-                  </label>
+        <div className="table-container p-4">
+          <div className="grid gap-6 lg:grid-cols-[28rem_1fr]">
+            <div className="min-w-0">
+              <FieldSelect
+                className="w-full min-w-0"
+                label="Hero"
+                value={outfitHero}
+                options={[
+                  { value: '', label: 'Select hero' },
+                  ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
+                ]}
+                onChange={setOutfitHero}
+              />
+              {heroDraft ? (
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  {(
+                    [
+                      ['hp', 'HP'],
+                      ['atk', 'ATK'],
+                      ['def', 'DEF'],
+                      ['atk_interval', 'Interval'],
+                      ['rr_auto', 'RR Auto'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <label key={key} className="form-group block">
+                      <span>{label}</span>
+                      <input
+                        className="form-input mt-1 w-full"
+                        type="number"
+                        value={heroDraft[key]}
+                        onChange={(event) =>
+                          setHeroDraft({ ...heroDraft, [key]: Number(event.target.value) })
+                        }
+                        onBlur={() => void saveHeroStats()}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <FieldSelect
+                  className="min-w-0"
+                  label="Left set"
+                  value={desiredLeft}
+                  options={[
+                    { value: '', label: 'Any' },
+                    ...setsSortedByTier(LEFT_SETS).map((set) => ({
+                      value: set.key,
+                      label: set.name,
+                      iconSrc: gearSetBadgeSrc(set.key),
+                    })),
+                  ]}
+                  onChange={setDesiredLeft}
+                />
+                <FieldSelect
+                  className="min-w-0"
+                  label="Right set"
+                  value={desiredRight}
+                  options={[
+                    { value: '', label: 'Any' },
+                    ...setsSortedByTier(RIGHT_SETS).map((set) => ({
+                      value: set.key,
+                      label: set.name,
+                      iconSrc: gearSetBadgeSrc(set.key),
+                    })),
+                  ]}
+                  onChange={setDesiredRight}
+                />
+              </div>
+              <label className="mt-3 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={forceSets}
+                  onChange={(event) => setForceSets(event.target.checked)}
+                />
+                Force sets only
+              </label>
+              <label className="mt-2 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={includeEquipped}
+                  onChange={(event) => setIncludeEquipped(event.target.checked)}
+                />
+                Include this hero's equipped gear
+              </label>
+              <h3 className="mt-5 text-sm font-semibold">Weights</h3>
+              {SCORE_STAT_KEYS.map((key) => (
+                <label key={key} className="mt-2 block text-xs">
+                  <span className="text-muted flex justify-between">
+                    {SCORE_STAT_LABELS[key]}
+                    <span>{weights[key] ?? 0}</span>
+                  </span>
+                  <input
+                    className="w-full"
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={weights[key] ?? 0}
+                    onChange={(event) =>
+                      setWeights({ ...weights, [key]: Number(event.target.value) })
+                    }
+                  />
+                </label>
+              ))}
+              <h3 className="mt-5 text-sm font-semibold">Minimums (final stats)</h3>
+              {SCORE_STAT_KEYS.map((key) => (
+                <label key={key} className="form-group mt-2 block text-sm">
+                  <span>{SCORE_STAT_LABELS[key]}</span>
+                  <input
+                    className="form-input mt-1 w-full"
+                    type="number"
+                    value={minimums[key] ?? ''}
+                    onChange={(event) => {
+                      const next = { ...minimums };
+                      if (event.target.value === '') delete next[key];
+                      else next[key] = Number(event.target.value);
+                      setMinimums(next);
+                    }}
+                  />
+                </label>
+              ))}
+              <Button
+                className="mt-4 w-full"
+                variant="accent"
+                disabled={!outfitHero}
+                onClick={() => void calculate()}
+              >
+                Calculate
+              </Button>
+            </div>
+            <div>
+              {calcMessage ? <p className="text-muted mb-3 text-sm">{calcMessage}</p> : null}
+              <div className="grid gap-4">
+                {results.map((result, index) => (
+                  <section key={index} className="rounded-[var(--radius-ui)] p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="font-semibold">Result {index + 1}</h3>
+                      <Button variant="accent" onClick={() => void saveResult(result)}>
+                        Save
+                      </Button>
+                    </div>
+                    <p className="text-muted mb-3 text-sm">
+                      ATK {Math.round(result.stats.atk)} · Crit {result.stats.critRate.toFixed(1)}%
+                      · CDMG {result.stats.critDmg.toFixed(1)}% · Interval{' '}
+                      {result.stats.attackInterval}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {result.pieces.map((piece) => {
+                        const full = gear.find((row) => row.id === piece.id);
+                        return full ? <GearTile key={piece.id} gear={full} /> : null;
+                      })}
+                    </div>
+                  </section>
                 ))}
               </div>
-            ) : null}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <FieldSelect
-                className="min-w-0"
-                label="Left set"
-                value={desiredLeft}
-                options={[
-                  { value: '', label: 'Any' },
-                  ...LEFT_SETS.map((set) => ({ value: set.key, label: set.name })),
-                ]}
-                onChange={setDesiredLeft}
-              />
-              <FieldSelect
-                className="min-w-0"
-                label="Right set"
-                value={desiredRight}
-                options={[
-                  { value: '', label: 'Any' },
-                  ...RIGHT_SETS.map((set) => ({ value: set.key, label: set.name })),
-                ]}
-                onChange={setDesiredRight}
-              />
-            </div>
-            <label className="mt-3 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={forceSets}
-                onChange={(event) => setForceSets(event.target.checked)}
-              />
-              Force sets only
-            </label>
-            <label className="mt-2 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={includeEquipped}
-                onChange={(event) => setIncludeEquipped(event.target.checked)}
-              />
-              Include this hero's equipped gear
-            </label>
-            <h3 className="mt-5 text-sm font-semibold">Weights</h3>
-            {SCORE_STAT_KEYS.map((key) => (
-              <label key={key} className="mt-2 block text-xs">
-                <span className="text-muted flex justify-between">
-                  {SCORE_STAT_LABELS[key]}
-                  <span>{weights[key] ?? 0}</span>
-                </span>
-                <input
-                  className="w-full"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={weights[key] ?? 0}
-                  onChange={(event) =>
-                    setWeights({ ...weights, [key]: Number(event.target.value) })
-                  }
-                />
-              </label>
-            ))}
-            <h3 className="mt-5 text-sm font-semibold">Minimums (final stats)</h3>
-            {SCORE_STAT_KEYS.map((key) => (
-              <label key={key} className="form-group mt-2 block text-sm">
-                <span>{SCORE_STAT_LABELS[key]}</span>
-                <input
-                  className="form-input mt-1 w-full"
-                  type="number"
-                  value={minimums[key] ?? ''}
-                  onChange={(event) => {
-                    const next = { ...minimums };
-                    if (event.target.value === '') delete next[key];
-                    else next[key] = Number(event.target.value);
-                    setMinimums(next);
-                  }}
-                />
-              </label>
-            ))}
-            <Button
-              className="mt-4 w-full"
-              variant="accent"
-              disabled={!outfitHero}
-              onClick={() => void calculate()}
-            >
-              Calculate
-            </Button>
-          </div>
-          <div>
-            {calcMessage ? <p className="text-muted mb-3 text-sm">{calcMessage}</p> : null}
-            <div className="grid gap-4">
-              {results.map((result, index) => (
-                <section key={index} className="glass-surface p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-semibold">Result {index + 1}</h3>
-                    <Button variant="accent" onClick={() => void saveResult(result)}>
-                      Save
-                    </Button>
-                  </div>
-                  <p className="text-muted mb-3 text-sm">
-                    ATK {Math.round(result.stats.atk)} · Crit {result.stats.critRate.toFixed(1)}% ·
-                    CDMG {result.stats.critDmg.toFixed(1)}% · Interval {result.stats.attackInterval}
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {result.pieces.map((piece) => {
-                      const full = gear.find((row) => row.id === piece.id);
-                      return full ? <GearTile key={piece.id} gear={full} /> : null;
-                    })}
-                  </div>
-                </section>
-              ))}
             </div>
           </div>
         </div>
