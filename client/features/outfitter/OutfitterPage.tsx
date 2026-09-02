@@ -309,6 +309,7 @@ export function OutfitterPage() {
             <FieldSelect
               className="min-w-[12rem]"
               label="Set"
+              inline
               value={setFilter}
               options={[
                 { value: '', label: 'All sets' },
@@ -323,6 +324,7 @@ export function OutfitterPage() {
             <FieldSelect
               className="min-w-[12rem]"
               label="Main"
+              inline
               value={mainFilter}
               options={[
                 { value: '', label: 'Any main' },
@@ -333,6 +335,7 @@ export function OutfitterPage() {
             <FieldSelect
               className="min-w-[12rem]"
               label="Sub"
+              inline
               value={subFilter}
               options={[
                 { value: '', label: 'Any sub' },
