@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+coverage/
+*.log
+.env
+.env.keys
+.env*.local
+.env.test
+_resources/
+public/gear/scrape-summary.json
