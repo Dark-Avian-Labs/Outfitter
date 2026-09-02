@@ -1,4 +1,4 @@
-import { useAuth as useClerkAuth } from '@clerk/react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 import {
   createContext,
   useCallback,
@@ -27,6 +27,16 @@ interface AuthContextValue {
 
 const UNAUTHENTICATED: AuthState = { status: 'unauthenticated', userId: null, isAdmin: false };
 
+function clerkUserIsOutfitterAdmin(publicMetadata: unknown): boolean {
+  if (!publicMetadata || typeof publicMetadata !== 'object') return false;
+  const apps = (publicMetadata as { apps?: unknown }).apps;
+  if (!apps || typeof apps !== 'object') return false;
+  for (const [key, value] of Object.entries(apps)) {
+    if (key.toLowerCase() === 'outfitter' && value === 'admin') return true;
+  }
+  return false;
+}
+
 const AuthContext = createContext<AuthContextValue>({
   auth: UNAUTHENTICATED,
   refresh: async () => {},
@@ -34,6 +44,7 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useClerkAuth();
+  const { user } = useUser();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading', userId: null, isAdmin: false });
   const refreshSeq = useRef(0);
 
@@ -65,19 +76,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuth({
         status: 'authenticated',
         userId: data.userId ?? null,
-        isAdmin: data.isAdmin === true,
+        isAdmin: data.isAdmin === true || clerkUserIsOutfitterAdmin(user?.publicMetadata),
       });
     } catch {
       if (seq !== refreshSeq.current) return;
       setAuth({ status: 'error', userId: null, isAdmin: false });
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, user?.publicMetadata]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  const value = useMemo(() => ({ auth, refresh }), [auth, refresh]);
+  const clerkAdmin = clerkUserIsOutfitterAdmin(user?.publicMetadata);
+  const value = useMemo(
+    () => ({
+      auth:
+        auth.status === 'authenticated' ? { ...auth, isAdmin: auth.isAdmin || clerkAdmin } : auth,
+      refresh,
+    }),
+    [auth, clerkAdmin, refresh],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

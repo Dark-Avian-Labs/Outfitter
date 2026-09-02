@@ -90,7 +90,13 @@ export const HOST = process.env.HOST || '127.0.0.1';
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 
 export const APP_NAME = process.env.APP_NAME?.trim() || 'Outfitter';
-export const APP_ID = process.env.APP_ID?.trim() || 'outfitter';
+const rawAppId = process.env.APP_ID?.trim() || '';
+if (isEncryptedEnvValue(rawAppId)) {
+  throw new Error(
+    '[FATAL] APP_ID is still encrypted. Ensure DOTENV_PRIVATE_KEY_* is available (see .env.keys) or run via dotenvx.',
+  );
+}
+export const APP_ID = rawAppId || 'outfitter';
 
 function readPackageVersion(projectRoot: string): string {
   try {

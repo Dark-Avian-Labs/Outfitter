@@ -44,11 +44,3 @@ export type OutfitResult = {
   }>;
   stats: FinalStats;
 };
-
-export function classIcon(classKey: string): string {
-  return `/hero-images/icons/classes/${classKey}.svg`;
-}
-
-export function factionIcon(faction: string): string {
-  return `/hero-images/icons/factions/${faction}.svg`;
-}

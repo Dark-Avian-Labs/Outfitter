@@ -4,9 +4,11 @@ import { closeAppDb, getAppDb } from './db/appDb.js';
 import { closeSessionDb } from './db/connection.js';
 import { catalogHeroCount } from './db/queries.js';
 import { importCodexCatalog } from './import/codexCatalog.js';
+import { writeTacticianClassIconSvg } from './import/tacticianIcon.js';
 import { log } from './logger.js';
 
 const { app, sessionStore } = createApp();
+writeTacticianClassIconSvg();
 log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
 
 try {

@@ -1773,6 +1773,19 @@ html.ui-clear .stale-update-banner::after {
   object-fit: contain;
 }
 
+.stars-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.stars-row img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 .stats-bar-actions {
   display: flex;
   align-items: center;
