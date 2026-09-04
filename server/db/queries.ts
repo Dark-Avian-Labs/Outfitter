@@ -67,6 +67,7 @@ export type GearPieceRow = {
   exclusive_faction: string | null;
   equipped_hero_slug: string | null;
   equipped_hero_name: string | null;
+  equipped_hero_portrait: string | null;
   exclusive_hero_name: string | null;
   exclusive_hero_portrait: string | null;
 };
@@ -232,6 +233,7 @@ function gearSelectSql(): string {
   return `SELECT
       g.*,
       eh.name AS equipped_hero_name,
+      eh.portrait_path AS equipped_hero_portrait,
       xh.name AS exclusive_hero_name,
       xh.portrait_path AS exclusive_hero_portrait
     FROM gear_pieces g

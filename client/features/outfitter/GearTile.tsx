@@ -37,6 +37,7 @@ export type GearView = {
   exclusive_hero_portrait: string | null;
   equipped_hero_slug: string | null;
   equipped_hero_name: string | null;
+  equipped_hero_portrait: string | null;
 };
 
 function setLabel(setKey: string): string {
@@ -97,7 +98,7 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
         }}
       />
       {overlay}
-      {gear.equipped_hero_name ? (
+      {size >= 64 && gear.equipped_hero_name ? (
         <span className="gear-tile__overlay gear-tile__overlay--br">{gear.equipped_hero_name}</span>
       ) : null}
     </div>
