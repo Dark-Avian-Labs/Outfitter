@@ -20,3 +20,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.2.2** `chore` [#10](https://github.com/Dark-Avian-Labs/Outfitter/pull/10): fix/rarity purple hue
 - **v1.3.0** `chore` [#11](https://github.com/Dark-Avian-Labs/Outfitter/pull/11): feat/ocr multi pass
 - **v1.3.1** `chore(deps)` [#12](https://github.com/Dark-Avian-Labs/Outfitter/pull/12): Bump @clerk/express in the production-dependencies group
+- **v1.3.2** `ci` [#15](https://github.com/Dark-Avian-Labs/Outfitter/pull/15): use 4 vCPU runners
