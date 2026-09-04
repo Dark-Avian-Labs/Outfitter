@@ -1940,14 +1940,58 @@ html.ui-clear .stale-update-banner::after {
   border-bottom: none;
 }
 
+.gear-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 52rem;
+}
+
+.gear-table col.col-icon,
+.gear-table col.col-type,
+.gear-table col.col-equipped {
+  width: 120px;
+}
+
+.gear-table col.col-set,
+.gear-table col.col-main {
+  width: calc(22ch + 2rem);
+}
+
+.gear-table col.col-stats {
+  width: auto;
+}
+
 .gear-table th,
 .gear-table td {
   text-align: center;
   vertical-align: middle;
 }
 
+.gear-table .col-icon,
+.gear-table .col-type,
+.gear-table .col-equipped {
+  padding-inline: 8px;
+}
+
+.gear-table .col-type,
+.gear-table .col-set,
+.gear-table .col-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .gear-table .gear-tile {
   margin-inline: auto;
+}
+
+.gear-table__hero {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin-inline: auto;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .gear-table th.stats-col,

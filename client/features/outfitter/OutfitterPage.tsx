@@ -360,68 +360,95 @@ export function OutfitterPage() {
           <div className="table-container">
             <div className="table-scroll">
               <table className="gear-table">
+                <colgroup>
+                  <col className="col-icon" />
+                  <col className="col-type" />
+                  <col className="col-set" />
+                  <col className="col-main" />
+                  <col className="col-stats" />
+                  <col className="col-equipped" />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th />
-                    <th>Type</th>
-                    <th>Set</th>
-                    <th>Main</th>
+                    <th className="col-icon" />
+                    <th className="col-type">Type</th>
+                    <th className="col-set">Set</th>
+                    <th className="col-main">Main</th>
                     <th className="stats-col">Stats</th>
-                    <th>Equipped</th>
+                    <th className="col-equipped">Equipped</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredGear.map((piece) => (
-                    <tr
-                      key={piece.id}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        setEditingGear(piece);
-                        setFormError(null);
-                        setGearFormOpen(true);
-                      }}
-                    >
-                      <td>
-                        <GearTile gear={piece} size={56} />
-                      </td>
-                      <td>{SLOT_LABELS[piece.slot]}</td>
-                      <td>{SET_BY_KEY[piece.set_key]?.name ?? piece.set_key}</td>
-                      <td>
-                        {GEAR_STAT_LABELS[piece.main_stat]}{' '}
-                        {formatStatValue(piece.main_stat, piece.main_value + piece.main_bonus)}
-                      </td>
-                      <td className="stats-col">
-                        <div className="flex min-w-[16rem] flex-col gap-1">
-                          {[
-                            piece.sub1_stat && piece.sub1_value != null
-                              ? { stat: piece.sub1_stat, value: piece.sub1_value }
-                              : null,
-                            piece.sub2_stat && piece.sub2_value != null
-                              ? { stat: piece.sub2_stat, value: piece.sub2_value }
-                              : null,
-                            piece.sub3_stat && piece.sub3_value != null
-                              ? { stat: piece.sub3_stat, value: piece.sub3_value }
-                              : null,
-                            piece.sub4_stat && piece.sub4_value != null
-                              ? { stat: piece.sub4_stat, value: piece.sub4_value }
-                              : null,
-                          ]
-                            .filter(
-                              (entry): entry is { stat: GearView['main_stat']; value: number } =>
-                                entry != null,
-                            )
-                            .map((entry, index) => (
-                              <StatGauge
-                                key={`${piece.id}-${index}`}
-                                stat={entry.stat}
-                                value={entry.value}
-                              />
-                            ))}
-                        </div>
-                      </td>
-                      <td>{piece.equipped_hero_name ?? '—'}</td>
-                    </tr>
-                  ))}
+                  {filteredGear.map((piece) => {
+                    const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
+                    const mainLabel = `${GEAR_STAT_LABELS[piece.main_stat]} ${formatStatValue(
+                      piece.main_stat,
+                      piece.main_value + piece.main_bonus,
+                    )}`;
+                    return (
+                      <tr
+                        key={piece.id}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setEditingGear(piece);
+                          setFormError(null);
+                          setGearFormOpen(true);
+                        }}
+                      >
+                        <td className="col-icon">
+                          <GearTile gear={piece} size={40} />
+                        </td>
+                        <td className="col-type">{SLOT_LABELS[piece.slot]}</td>
+                        <td className="col-set" title={setName}>
+                          {setName}
+                        </td>
+                        <td className="col-main" title={mainLabel}>
+                          {mainLabel}
+                        </td>
+                        <td className="stats-col">
+                          <div className="flex flex-col gap-1">
+                            {[
+                              piece.sub1_stat && piece.sub1_value != null
+                                ? { stat: piece.sub1_stat, value: piece.sub1_value }
+                                : null,
+                              piece.sub2_stat && piece.sub2_value != null
+                                ? { stat: piece.sub2_stat, value: piece.sub2_value }
+                                : null,
+                              piece.sub3_stat && piece.sub3_value != null
+                                ? { stat: piece.sub3_stat, value: piece.sub3_value }
+                                : null,
+                              piece.sub4_stat && piece.sub4_value != null
+                                ? { stat: piece.sub4_stat, value: piece.sub4_value }
+                                : null,
+                            ]
+                              .filter(
+                                (entry): entry is { stat: GearView['main_stat']; value: number } =>
+                                  entry != null,
+                              )
+                              .map((entry, index) => (
+                                <StatGauge
+                                  key={`${piece.id}-${index}`}
+                                  stat={entry.stat}
+                                  value={entry.value}
+                                />
+                              ))}
+                          </div>
+                        </td>
+                        <td className="col-equipped">
+                          {piece.equipped_hero_portrait ? (
+                            <img
+                              className="gear-table__hero"
+                              src={piece.equipped_hero_portrait}
+                              alt=""
+                              title={piece.equipped_hero_name ?? undefined}
+                            />
+                          ) : (
+                            <span title={piece.equipped_hero_name ?? undefined}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
