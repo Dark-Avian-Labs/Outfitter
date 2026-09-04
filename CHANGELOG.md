@@ -21,3 +21,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.3.0** `chore` [#11](https://github.com/Dark-Avian-Labs/Outfitter/pull/11): feat/ocr multi pass
 - **v1.3.1** `chore(deps)` [#12](https://github.com/Dark-Avian-Labs/Outfitter/pull/12): Bump @clerk/express in the production-dependencies group
 - **v1.3.2** `ci` [#15](https://github.com/Dark-Avian-Labs/Outfitter/pull/15): use 4 vCPU runners
+- **v1.3.3** `ci` [#16](https://github.com/Dark-Avian-Labs/Outfitter/pull/16): run Node jobs on 2 vCPU
