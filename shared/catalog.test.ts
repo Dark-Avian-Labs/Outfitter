@@ -30,8 +30,13 @@ describe('gearHasOutOfRangeStats', () => {
   });
 
   it('flags a gem bonus above the cap without treating main value as a substat', () => {
-    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atk', main_bonus: 86 })).toBe(true);
-    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atk', main_bonus: 85 })).toBe(false);
+    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atk', main_value: 1056, main_bonus: 86 })).toBe(true);
+    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atk', main_value: 1056, main_bonus: 85 })).toBe(false);
+  });
+
+  it('flags an armor HP main above the T3 +16 gem cap', () => {
+    expect(outOfRangeGearLabels({ ...legal, main_stat: 'hp', main_value: 23515, main_bonus: 10 })).toEqual(['HP']);
+    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'hp', main_value: 3960, main_bonus: 0 })).toBe(false);
   });
 
   it('ignores empty sub slots', () => {

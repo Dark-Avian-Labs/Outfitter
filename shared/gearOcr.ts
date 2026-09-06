@@ -4,9 +4,12 @@ import {
   GEAR_SLOTS,
   GEAR_STAT_KEYS,
   MAIN_STAT_BONUS_MAX,
+  MAIN_STAT_VALUE_MAX,
+  PERCENT_STATS,
   SLOT_LABELS,
   SLOT_MAIN_STATS,
   SUBSTAT_RANGE,
+  isSubstatInRange,
   type FactionKey,
   type GearPrefix,
   type GearSlot,
@@ -114,7 +117,8 @@ function allNumbers(text: string): number[] {
 function pickMainValue(stat: GearStatKey, numbers: number[]): number | null {
   if (numbers.length === 0) return null;
   const subMax = SUBSTAT_RANGE[stat].max;
-  const mains = numbers.filter((n) => n > subMax);
+  const cap = MAIN_STAT_VALUE_MAX[stat];
+  const mains = numbers.filter((n) => n > subMax && n <= cap);
   if (mains.length > 0) return Math.max(...mains);
   const first = numbers[0];
   const second = numbers[1];
@@ -143,7 +147,12 @@ function parseValueAndBonus(
 }
 
 function isMoreMainLike(stat: GearStatKey, next: number, prev: number): boolean {
+  const cap = MAIN_STAT_VALUE_MAX[stat];
   const subMax = SUBSTAT_RANGE[stat].max;
+  const nextOk = next > subMax && next <= cap;
+  const prevOk = prev > subMax && prev <= cap;
+  if (nextOk && prevOk) return next > prev;
+  if (nextOk !== prevOk) return nextOk;
   return next > subMax && prev <= subMax;
 }
 
@@ -151,13 +160,32 @@ function salvageMainStat(stats: DetectedGearStat[], blob: string): void {
   const main = stats[0];
   if (!main || main.stat !== 'hp') return;
   const subMax = SUBSTAT_RANGE.hp.max;
-  if (main.value <= subMax) {
-    const mains = allNumbers(blob).filter((n) => n > subMax && n < 10_000);
+  const cap = MAIN_STAT_VALUE_MAX.hp;
+  if (main.value <= subMax || main.value > cap) {
+    const mains = allNumbers(blob).filter((n) => n > subMax && n <= cap);
     if (mains.length > 0) main.value = Math.max(...mains);
   }
   if (main.value === 2100 && /\+16\b/.test(blob)) {
     main.value = 3600;
   }
+}
+
+function coerceSubstatValue(stat: GearStatKey, value: number): number {
+  if (isSubstatInRange(stat, value)) return value;
+  if (PERCENT_STATS.has(stat) && value >= 100) {
+    const stripped = Math.round((value % 100) * 10) / 10;
+    if (isSubstatInRange(stat, stripped)) return stripped;
+  }
+  return value;
+}
+
+function parseSubValue(source: string, stat: GearStatKey): number | null {
+  const numbers = allNumbers(source);
+  const first = numbers[0];
+  const second = numbers[1];
+  const picked =
+    second != null && first != null && Number.isInteger(first) && first < 10 ? second : first;
+  return picked == null ? null : coerceSubstatValue(stat, picked);
 }
 
 function isOutOfSubRange(entry: DetectedGearStat): boolean {
@@ -435,9 +463,9 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
     const parsed = isMain
       ? parseValueAndBonus(source, matched.stat)
       : (() => {
-          const value = allNumbers(source)[0] ?? null;
-          return value == null ? null : { value, bonus: 0 };
-        })();
+        const value = parseSubValue(source, matched.stat);
+        return value == null ? null : { value, bonus: 0 };
+      })();
     if (parsed == null || seen.has(matched.stat)) continue;
     seen.add(matched.stat);
     stats.push(

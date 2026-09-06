@@ -11,6 +11,7 @@ import {
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
+  outOfRangeGearLabels,
   type GearSlot,
   type GearStatKey,
 } from '@shared/catalog';
@@ -127,6 +128,20 @@ export function GearFormModal({
   const slotSets = setsForSlot(draft.slot);
   const mainOptions = SLOT_MAIN_STATS[draft.slot];
   const bonusMax = MAIN_STAT_BONUS_MAX[draft.main_stat] ?? 0;
+  const filledSubs = draft.substats.filter((sub) => sub.value > 0);
+  const illegalLabels = outOfRangeGearLabels({
+    main_stat: draft.main_stat,
+    main_value: draft.main_value,
+    main_bonus: draft.main_bonus,
+    sub1_stat: filledSubs[0]?.stat ?? null,
+    sub1_value: filledSubs[0]?.value ?? null,
+    sub2_stat: filledSubs[1]?.stat ?? null,
+    sub2_value: filledSubs[1]?.value ?? null,
+    sub3_stat: filledSubs[2]?.stat ?? null,
+    sub3_value: filledSubs[2]?.value ?? null,
+    sub4_stat: filledSubs[3]?.stat ?? null,
+    sub4_value: filledSubs[3]?.value ?? null,
+  });
 
   useEffect(() => {
     if (open) {
@@ -446,6 +461,11 @@ export function GearFormModal({
           </div>
         </div>
         {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
+        {illegalLabels.length > 0 ? (
+          <p className="mt-3 text-sm text-[var(--color-danger)]">
+            Out of range: {illegalLabels.join(', ')}
+          </p>
+        ) : null}
         {duplicateWarned && duplicate ? (
           <p
             className="mt-3 rounded-lg border border-[var(--color-warning)] bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] px-3 py-2 text-sm"
