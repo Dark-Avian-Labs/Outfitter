@@ -2015,7 +2015,6 @@ html.ui-clear .stale-update-banner::after {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transform: translateZ(0);
   border-radius: 6px;
   background: color-mix(in oklab, var(--color-danger) 35%, var(--color-surface-300));
   border: 1px solid color-mix(in oklab, var(--color-danger) 40%, transparent);
@@ -2028,6 +2027,17 @@ html.ui-clear .stale-update-banner::after {
 .gear-tile--variant {
   border: 3px solid var(--color-danger);
   box-shadow: 0 0 12px color-mix(in oklab, var(--color-danger) 70%, transparent);
+}
+
+.gear-tile--ancient::after,
+.gear-tile--variant::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--color-danger);
 }
 
 .gear-tile--empty {
@@ -2044,10 +2054,10 @@ html.ui-clear .stale-update-banner::after {
 
 .gear-tile__fx {
   position: absolute;
-  inset: -1px;
+  inset: 0;
   z-index: 1;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   pointer-events: none;
   mix-blend-mode: screen;

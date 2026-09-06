@@ -69,6 +69,8 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
       : gear.prefix === 'ancient'
         ? 'gear-tile--ancient'
         : '';
+  const fxStem =
+    gear.prefix === 'variant' ? 'variant-fx' : gear.prefix === 'ancient' ? 'ancient-fx' : null;
   const overlay = gear.exclusive_hero_portrait ? (
     <img
       className="gear-tile__overlay gear-tile__overlay--tl"
@@ -97,10 +99,10 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
           if (src !== emptySrc) setSrc(emptySrc);
         }}
       />
-      {gear.prefix === 'variant' ? (
+      {fxStem ? (
         <video className="gear-tile__fx" muted loop playsInline autoPlay preload="auto" aria-hidden>
-          <source src="/gear/variant-fx.webm" type="video/webm" />
-          <source src="/gear/variant-fx.mp4" type="video/mp4" />
+          <source src={`/gear/${fxStem}.webm`} type="video/webm" />
+          <source src={`/gear/${fxStem}.mp4`} type="video/mp4" />
         </video>
       ) : null}
       {overlay}
