@@ -1,10 +1,13 @@
 import {
+  FACTION_DISPLAY_NAMES,
+  FACTIONS,
   GEAR_SLOTS,
   GEAR_STAT_KEYS,
   MAIN_STAT_BONUS_MAX,
   SLOT_LABELS,
   SLOT_MAIN_STATS,
   SUBSTAT_RANGE,
+  type FactionKey,
   type GearPrefix,
   type GearSlot,
   type GearStatKey,
@@ -35,6 +38,7 @@ export type ParsedGearOcr = {
   set_key: string | null;
   prefix: GearPrefix | null;
   exclusive_hero_slug: string | null;
+  exclusive_faction: string | null;
 };
 
 export type OcrHeroRef = {
@@ -295,6 +299,7 @@ export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
     set_key: base.set_key ?? extra.set_key,
     prefix: base.prefix ?? extra.prefix,
     exclusive_hero_slug: base.exclusive_hero_slug ?? extra.exclusive_hero_slug,
+    exclusive_faction: base.exclusive_faction ?? extra.exclusive_faction,
   };
 }
 
@@ -328,6 +333,32 @@ function valueSourceFromLines(
     if (!isMain) break;
   }
   return source;
+}
+
+const FACTION_NEEDLES = FACTIONS.filter((faction) => faction !== 'unaffiliated')
+  .flatMap((faction) => {
+    const full = normalizeOcrText(FACTION_DISPLAY_NAMES[faction]).replace(/\n/g, ' ');
+    const needles = [full];
+    if (!full.startsWith('THE ')) needles.push(`THE ${full}`);
+    return needles.map((needle) => ({ key: faction, needle }));
+  })
+  .sort((a, b) => b.needle.length - a.needle.length);
+
+function findExclusiveFaction(blob: string): FactionKey | null {
+  const spaced = blob.replace(/\n/g, ' ');
+  for (const { key, needle } of FACTION_NEEDLES) {
+    if (hasPhrase(spaced, `${needle} EXCLUSIVE`) || hasPhrase(spaced, `EXCLUSIVE ${needle}`)) {
+      return key;
+    }
+  }
+  for (const { key, needle } of FACTION_NEEDLES) {
+    if (hasPhrase(spaced, `${needle} RING`)) return key;
+  }
+  if (!hasPhrase(spaced, 'EXCLUSIVE')) return null;
+  for (const { key, needle } of FACTION_NEEDLES) {
+    if (hasPhrase(spaced, needle)) return key;
+  }
+  return null;
 }
 
 function findExclusiveHero(blob: string, heroes: readonly OcrHeroRef[]): string | null {
@@ -389,12 +420,15 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
   salvageMainStat(stats, blob);
 
   const slot = findSlot(lines);
+  const exclusiveHero = slot === 'ring' ? null : findExclusiveHero(blob, heroes);
+  const exclusiveFaction = slot === 'ring' ? findExclusiveFaction(blob) : null;
   return {
     stats,
     slot,
-    set_key: findSetKey(blob),
+    set_key: exclusiveHero || exclusiveFaction ? null : findSetKey(blob),
     prefix: findPrefix(blob),
-    exclusive_hero_slug: slot === 'ring' ? null : findExclusiveHero(blob, heroes),
+    exclusive_hero_slug: exclusiveHero,
+    exclusive_faction: exclusiveFaction,
   };
 }
 
@@ -426,7 +460,8 @@ export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedG
     parsed.slot == null &&
     parsed.set_key == null &&
     parsed.prefix == null &&
-    parsed.exclusive_hero_slug == null
+    parsed.exclusive_hero_slug == null &&
+    parsed.exclusive_faction == null
   ) {
     return draft;
   }
@@ -446,9 +481,11 @@ export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedG
   }
   const prefix = parsed.prefix ?? draft.prefix;
   const exclusive =
-    parsed.exclusive_hero_slug && slot !== 'ring'
-      ? { exclusive_hero_slug: parsed.exclusive_hero_slug, exclusive_faction: '' }
-      : {};
+    slot === 'ring' && parsed.exclusive_faction
+      ? { exclusive_faction: parsed.exclusive_faction, exclusive_hero_slug: '' }
+      : parsed.exclusive_hero_slug && slot !== 'ring'
+        ? { exclusive_hero_slug: parsed.exclusive_hero_slug, exclusive_faction: '' }
+        : {};
   if (!main) {
     return { ...draft, slot, set_key: setKey, prefix, ...exclusive };
   }

@@ -393,4 +393,72 @@ Rage Regen 18.5%
     expect(next.main_stat).toBe('atkBonus');
     expect(next.main_value).toBe(66);
   });
+
+  const exclusiveRing = `
+Mythic Gear
+The Chaos Dominion Ring
+THE CHAOS DOMINION
+Exclusive
+Crit. DMG
+72%
+ATK Bonus 13.5%
+ATK Spd. 50
+DEF Bonus 19%
+HP Bonus 12%
+`;
+
+  it('reads the faction from a ring name and exclusive banner', () => {
+    expect(parseGearOcr(exclusiveRing)).toMatchObject({
+      slot: 'ring',
+      set_key: null,
+      prefix: 'none',
+      exclusive_hero_slug: null,
+      exclusive_faction: 'chaos_dominion',
+    });
+    expect(parseGearOcr(exclusiveRing).stats).toEqual([
+      { stat: 'critDmg', value: 72 },
+      { stat: 'atkBonus', value: 13.5 },
+      { stat: 'atkSpd', value: 50 },
+      { stat: 'defBonus', value: 19 },
+      { stat: 'hpBonus', value: 12 },
+    ]);
+  });
+
+  it('fills faction exclusive without inventing a set', () => {
+    const next = applyOcrStats(
+      {
+        slot: 'weapon',
+        set_key: 'calamity',
+        prefix: 'none',
+        main_stat: 'atk',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+        exclusive_hero_slug: 'vierna',
+        exclusive_faction: '',
+      },
+      parseGearOcr(exclusiveRing),
+    );
+    expect(next.slot).toBe('ring');
+    expect(next.exclusive_faction).toBe('chaos_dominion');
+    expect(next.exclusive_hero_slug).toBe('');
+    expect(next.main_stat).toBe('critDmg');
+    expect(next.main_value).toBe(72);
+  });
+
+  it('does not treat Infernal Blast exclusive as Infernal Roar', () => {
+    expect(
+      parseGearOcr(`
+Mythic Gear
+Infernal Blast Ring
+INFERNAL BLAST
+Exclusive
+ATK Bonus 66%
+`),
+    ).toMatchObject({
+      slot: 'ring',
+      set_key: null,
+      exclusive_faction: 'infernal_blast',
+    });
+  });
 });

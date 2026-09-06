@@ -166,6 +166,7 @@ export function GearFormModal({
           set_key?: string | null;
           prefix?: GearDraft['prefix'] | null;
           exclusive_hero_slug?: string | null;
+          exclusive_faction?: string | null;
           error?: string;
         } | null;
         if (!response.ok) {
@@ -184,6 +185,7 @@ export function GearFormModal({
             set_key: body?.set_key ?? null,
             prefix: body?.prefix ?? null,
             exclusive_hero_slug: body?.exclusive_hero_slug ?? null,
+            exclusive_faction: body?.exclusive_faction ?? null,
           }),
         );
         setOcrStatus(
