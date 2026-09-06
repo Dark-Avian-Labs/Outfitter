@@ -103,6 +103,19 @@ describe('rateGear', () => {
     expect(hit.rank).not.toBe('D');
   });
 
+  it('labels a crit weapon as ATK DPS, not No Crit, when both keeps hit', () => {
+    expect(
+      rateGear(
+        piece('weapon', 'wicked_vengeance', 'atk', [
+          { stat: 'atkBonus', value: 28.5 },
+          { stat: 'critRate', value: 24 },
+          { stat: 'critDmg', value: 36 },
+          { stat: 'atkSpd', value: 78 },
+        ]),
+      ).ruleName,
+    ).toBe('ATK DPS Weapon');
+  });
+
   it('rejects Greyfang from Tank 2', () => {
     expect(
       rateGear(
