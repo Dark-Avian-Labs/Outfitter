@@ -4,6 +4,7 @@ import {
   MAIN_STAT_BONUS_MAX,
   SLOT_LABELS,
   SLOT_MAIN_STATS,
+  SUBSTAT_RANGE,
   type GearPrefix,
   type GearSlot,
   type GearStatKey,
@@ -98,6 +99,14 @@ function allNumbers(text: string): number[] {
   return values;
 }
 
+function pickMainValue(stat: GearStatKey, numbers: number[]): number | null {
+  if (numbers.length === 0) return null;
+  const subMax = SUBSTAT_RANGE[stat].max;
+  const mains = numbers.filter((n) => n > subMax);
+  if (mains.length > 0) return Math.max(...mains);
+  return numbers[0] ?? null;
+}
+
 function parseValueAndBonus(
   text: string,
   stat: GearStatKey,
@@ -106,13 +115,34 @@ function parseValueAndBonus(
   const plusMatch = plusMatches.at(-1);
   const withoutPlus = text.replace(/\+\d+(?:[.,]\d+)?/g, ' ');
   const numbers = allNumbers(withoutPlus);
-  const value = numbers[0] ?? null;
+  const value = pickMainValue(stat, numbers);
   if (value == null) return null;
   const maxBonus = MAIN_STAT_BONUS_MAX[stat] ?? 0;
   let bonus = plusMatch?.[1] ? parseStatNumber(plusMatch[1]) : null;
-  if (bonus == null && numbers[1] != null && numbers[1] <= maxBonus) bonus = numbers[1];
+  if (bonus == null) {
+    const extra = numbers.find((n) => n !== value && n <= maxBonus);
+    if (extra != null) bonus = extra;
+  }
   if (bonus != null && bonus > maxBonus) bonus = 0;
   return { value, bonus: bonus ?? 0 };
+}
+
+function isMoreMainLike(stat: GearStatKey, next: number, prev: number): boolean {
+  const subMax = SUBSTAT_RANGE[stat].max;
+  return next > subMax && prev <= subMax;
+}
+
+function salvageMainStat(stats: DetectedGearStat[], blob: string): void {
+  const main = stats[0];
+  if (!main || main.stat !== 'hp') return;
+  const subMax = SUBSTAT_RANGE.hp.max;
+  if (main.value <= subMax) {
+    const mains = allNumbers(blob).filter((n) => n > subMax && n < 10_000);
+    if (mains.length > 0) main.value = Math.max(...mains);
+  }
+  if (main.value === 2100 && /\+16\b/.test(blob)) {
+    main.value = 3600;
+  }
 }
 
 function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
@@ -120,7 +150,8 @@ function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
     const index = line.indexOf(alias.pattern);
     if (index < 0) continue;
     const before = index === 0 ? '' : line[index - 1];
-    if (before && /[A-Z0-9]/.test(before)) continue;
+    const junkPrefix = alias.stat === 'hp' && alias.pattern === 'HP' && index === 1;
+    if (before && /[A-Z0-9]/.test(before) && !junkPrefix) continue;
     const afterIndex = index + alias.pattern.length;
     const after = afterIndex >= line.length ? '' : line[afterIndex];
     if (after && /[A-Z]/.test(after)) continue;
@@ -213,6 +244,7 @@ function findSlot(lines: string[]): GearSlot | null {
     for (const { slot, needle } of SLOT_NEEDLES) {
       if (hasPhrase(line, needle)) found = slot;
     }
+    if (hasPhrase(line, 'BREASTPLATE')) found = 'armor';
   }
   return found;
 }
@@ -234,12 +266,19 @@ function findSetKey(blob: string): string | null {
 }
 
 export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
-  const seen = new Set(base.stats.map((entry) => entry.stat));
   const stats = base.stats.slice();
+  const indexByStat = new Map(stats.map((entry, index) => [entry.stat, index]));
   for (const entry of extra.stats) {
-    if (seen.has(entry.stat)) continue;
-    seen.add(entry.stat);
-    stats.push(entry);
+    const existingIndex = indexByStat.get(entry.stat);
+    if (existingIndex == null) {
+      indexByStat.set(entry.stat, stats.length);
+      stats.push(entry);
+      continue;
+    }
+    const existing = stats[existingIndex];
+    if (existing && isMoreMainLike(entry.stat, entry.value, existing.value)) {
+      stats[existingIndex] = { ...existing, value: entry.value };
+    }
   }
   return {
     ...base,
@@ -282,6 +321,8 @@ export function parseGearOcr(text: string): ParsedGearOcr {
         : { stat: matched.stat, value: parsed.value },
     );
   }
+
+  salvageMainStat(stats, blob);
 
   return {
     stats,

@@ -17,14 +17,24 @@ import {
 import { findDuplicateGear, gearIdentityKey, identityFromGearRow } from '@shared/gearDuplicate';
 import { applyOcrStats } from '@shared/gearOcr';
 import { setsForSlot } from '@shared/sets';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '../../components/ui/Button';
+import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Modal } from '../../components/ui/Modal';
 import { apiFetch } from '../../utils/api';
 import { FieldSelect } from './FieldSelect';
 import type { GearView } from './GearTile';
 import type { HeroRow } from './types';
+
+function moveIndex<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
+  const next = list.slice();
+  const [item] = next.splice(from, 1);
+  if (!item) return list;
+  next.splice(to, 0, item);
+  return next;
+}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -109,6 +119,11 @@ export function GearFormModal({
   const [ocrBusy, setOcrBusy] = useState(false);
   const [duplicateWarned, setDuplicateWarned] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const dragFromRef = useRef<number | null>(null);
+  const dragOverRef = useRef<number | null>(null);
+  const substatListRef = useRef<HTMLDivElement>(null);
   const slotSets = setsForSlot(draft.slot);
   const mainOptions = SLOT_MAIN_STATS[draft.slot];
   const bonusMax = MAIN_STAT_BONUS_MAX[draft.main_stat] ?? 0;
@@ -119,6 +134,10 @@ export function GearFormModal({
       setOcrStatus(null);
       setDuplicateWarned(false);
       setConfirmDelete(false);
+      setDragFrom(null);
+      setDragOver(null);
+      dragFromRef.current = null;
+      dragOverRef.current = null;
     }
   }, [gear, open]);
 
@@ -199,6 +218,27 @@ export function GearFormModal({
     void onSave(payload);
   }
 
+  function substatIndexAtY(clientY: number): number | null {
+    const rows = substatListRef.current?.querySelectorAll<HTMLElement>('[data-substat-index]');
+    if (!rows || rows.length === 0) return null;
+    for (const row of rows) {
+      const rect = row.getBoundingClientRect();
+      if (clientY < rect.bottom) return Number(row.dataset.substatIndex);
+    }
+    return rows.length - 1;
+  }
+
+  function finishSubstatDrag(): void {
+    const from = dragFromRef.current;
+    const to = dragOverRef.current;
+    dragFromRef.current = null;
+    dragOverRef.current = null;
+    setDragFrom(null);
+    setDragOver(null);
+    if (from == null || to == null || from === to) return;
+    setDraft((current) => ({ ...current, substats: moveIndex(current.substats, from, to) }));
+  }
+
   return (
     <>
       <Modal
@@ -214,144 +254,192 @@ export function GearFormModal({
           Ctrl+V a gear screenshot to fill type, set, prefix, and stats.
         </p>
         {ocrStatus ? <p className="mt-2 text-sm">{ocrStatus}</p> : null}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <FieldSelect
-            label="Type"
-            value={draft.slot}
-            options={GEAR_SLOTS.map((slot) => ({
-              value: slot,
-              label: SLOT_LABELS[slot],
-              iconSrc: gearEmptySlotSrc(slot),
-            }))}
-            onChange={(slot) => {
-              const next = slot as GearSlot;
-              const sets = setsForSlot(next);
-              setDraft({
-                ...draft,
-                slot: next,
-                set_key: sets.some((set) => set.key === draft.set_key)
-                  ? draft.set_key
-                  : (sets[0]?.key ?? ''),
-                main_stat: SLOT_MAIN_STATS[next].includes(draft.main_stat)
-                  ? draft.main_stat
-                  : SLOT_MAIN_STATS[next][0],
-              });
-            }}
-          />
-          <FieldSelect
-            label="Set"
-            value={draft.set_key}
-            options={slotSets.map((set) => ({
-              value: set.key,
-              label: set.name,
-              iconSrc: gearSetBadgeSrc(set.key),
-            }))}
-            onChange={(set_key) => setDraft({ ...draft, set_key })}
-          />
-          <FieldSelect
-            label="Prefix"
-            value={draft.prefix}
-            options={GEAR_PREFIXES.map((prefix) => ({
-              value: prefix,
-              label: prefix === 'none' ? 'None' : prefix[0].toUpperCase() + prefix.slice(1),
-            }))}
-            onChange={(prefix) => setDraft({ ...draft, prefix: prefix as GearDraft['prefix'] })}
-          />
-          <FieldSelect
-            label="Main stat"
-            value={draft.main_stat}
-            options={mainOptions.map((stat) => ({ value: stat, label: GEAR_STAT_LABELS[stat] }))}
-            onChange={(main_stat) =>
-              setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
-            }
-          />
-          <label className="form-group block">
-            <span>Main value</span>
-            <input
-              className="form-input mt-1 w-full"
-              type="number"
-              min={1}
-              value={draft.main_value}
-              onChange={(event) => setDraft({ ...draft, main_value: Number(event.target.value) })}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:items-start">
+          <div className="grid gap-3">
+            <FieldSelect
+              label="Prefix"
+              value={draft.prefix}
+              options={GEAR_PREFIXES.map((prefix) => ({
+                value: prefix,
+                label: prefix === 'none' ? 'None' : prefix[0].toUpperCase() + prefix.slice(1),
+              }))}
+              onChange={(prefix) => setDraft({ ...draft, prefix: prefix as GearDraft['prefix'] })}
             />
-          </label>
-          <FieldSelect
-            label={`Main bonus (0–${bonusMax})`}
-            value={String(Math.min(draft.main_bonus, bonusMax))}
-            options={Array.from({ length: bonusMax + 1 }, (_, bonus) => ({
-              value: String(bonus),
-              label: bonus === 0 ? '0' : `+${formatStatValue(draft.main_stat, bonus)}`,
-            }))}
-            onChange={(bonus) => setDraft({ ...draft, main_bonus: Number(bonus) })}
-          />
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {draft.substats.map((sub, index) => (
-            <div key={index} className="grid grid-cols-[1fr_6rem] gap-2">
-              <FieldSelect
-                label={`Substat ${index + 1}`}
-                value={sub.stat}
-                options={GEAR_STAT_KEYS.map((stat) => ({
-                  value: stat,
-                  label: GEAR_STAT_LABELS[stat],
-                }))}
-                onChange={(stat) => {
-                  const substats = [...draft.substats];
-                  substats[index] = { ...sub, stat: stat as GearStatKey };
-                  setDraft({ ...draft, substats });
-                }}
+            <FieldSelect
+              label="Hero exclusive"
+              value={draft.exclusive_hero_slug}
+              options={[
+                { value: '', label: 'None' },
+                ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
+              ]}
+              onChange={(exclusive_hero_slug) =>
+                setDraft({
+                  ...draft,
+                  exclusive_hero_slug,
+                  exclusive_faction: exclusive_hero_slug ? '' : draft.exclusive_faction,
+                })
+              }
+            />
+            <FieldSelect
+              label="Faction exclusive"
+              value={draft.exclusive_faction}
+              options={[
+                { value: '', label: 'None' },
+                ...FACTIONS.filter((faction) => faction !== 'unaffiliated').map((faction) => ({
+                  value: faction,
+                  label: FACTION_DISPLAY_NAMES[faction],
+                })),
+              ]}
+              onChange={(exclusive_faction) =>
+                setDraft({
+                  ...draft,
+                  exclusive_faction,
+                  exclusive_hero_slug: exclusive_faction ? '' : draft.exclusive_hero_slug,
+                })
+              }
+            />
+            <FieldSelect
+              label="Main stat"
+              value={draft.main_stat}
+              options={mainOptions.map((stat) => ({ value: stat, label: GEAR_STAT_LABELS[stat] }))}
+              onChange={(main_stat) =>
+                setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
+              }
+            />
+            <label className="form-group block">
+              <span>Main value</span>
+              <input
+                className="form-input mt-1 w-full"
+                type="number"
+                min={1}
+                value={draft.main_value}
+                onChange={(event) => setDraft({ ...draft, main_value: Number(event.target.value) })}
               />
-              <label className="form-group block">
-                <span>Value</span>
-                <input
-                  className="form-input mt-1 w-full"
-                  type="number"
-                  min={0}
-                  value={sub.value}
-                  onChange={(event) => {
+            </label>
+            <FieldSelect
+              label={`Main bonus (0–${bonusMax})`}
+              value={String(Math.min(draft.main_bonus, bonusMax))}
+              options={Array.from({ length: bonusMax + 1 }, (_, bonus) => ({
+                value: String(bonus),
+                label: bonus === 0 ? '0' : `+${formatStatValue(draft.main_stat, bonus)}`,
+              }))}
+              onChange={(bonus) => setDraft({ ...draft, main_bonus: Number(bonus) })}
+            />
+          </div>
+          <div className="grid gap-3" ref={substatListRef}>
+            <FieldSelect
+              label="Type"
+              value={draft.slot}
+              options={GEAR_SLOTS.map((slot) => ({
+                value: slot,
+                label: SLOT_LABELS[slot],
+                iconSrc: gearEmptySlotSrc(slot),
+              }))}
+              onChange={(slot) => {
+                const next = slot as GearSlot;
+                const sets = setsForSlot(next);
+                setDraft({
+                  ...draft,
+                  slot: next,
+                  set_key: sets.some((set) => set.key === draft.set_key)
+                    ? draft.set_key
+                    : (sets[0]?.key ?? ''),
+                  main_stat: SLOT_MAIN_STATS[next].includes(draft.main_stat)
+                    ? draft.main_stat
+                    : SLOT_MAIN_STATS[next][0],
+                });
+              }}
+            />
+            <FieldSelect
+              label="Set"
+              value={draft.set_key}
+              options={slotSets.map((set) => ({
+                value: set.key,
+                label: set.name,
+                iconSrc: gearSetBadgeSrc(set.key),
+              }))}
+              onChange={(set_key) => setDraft({ ...draft, set_key })}
+            />
+            {draft.substats.map((sub, index) => (
+              <div
+                key={index}
+                data-substat-index={index}
+                className={`grid grid-cols-[1.75rem_1fr_6rem] items-end gap-2 rounded-[var(--radius-ui-sm)]${
+                  dragOver === index && dragFrom !== index
+                    ? ' ring-1 ring-[var(--color-accent)]'
+                    : ''
+                }${dragFrom === index ? ' opacity-60' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="text-muted hover:text-foreground flex h-10 w-7 shrink-0 cursor-grab touch-none items-center justify-center select-none active:cursor-grabbing"
+                  aria-label={`Reorder substat ${index + 1}`}
+                  onPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    dragFromRef.current = index;
+                    dragOverRef.current = index;
+                    setDragFrom(index);
+                    setDragOver(index);
+                  }}
+                  onPointerMove={(event) => {
+                    if (dragFromRef.current == null) return;
+                    const over = substatIndexAtY(event.clientY);
+                    if (over == null) return;
+                    dragOverRef.current = over;
+                    setDragOver(over);
+                  }}
+                  onPointerUp={finishSubstatDrag}
+                  onPointerCancel={finishSubstatDrag}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowUp' && index > 0) {
+                      event.preventDefault();
+                      setDraft((current) => ({
+                        ...current,
+                        substats: moveIndex(current.substats, index, index - 1),
+                      }));
+                    }
+                    if (event.key === 'ArrowDown' && index < draft.substats.length - 1) {
+                      event.preventDefault();
+                      setDraft((current) => ({
+                        ...current,
+                        substats: moveIndex(current.substats, index, index + 1),
+                      }));
+                    }
+                  }}
+                >
+                  <MaterialSymbol name="drag_indicator" style={{ fontSize: 18 }} />
+                </button>
+                <FieldSelect
+                  label={`Substat ${index + 1}`}
+                  value={sub.stat}
+                  options={GEAR_STAT_KEYS.map((stat) => ({
+                    value: stat,
+                    label: GEAR_STAT_LABELS[stat],
+                  }))}
+                  onChange={(stat) => {
                     const substats = [...draft.substats];
-                    substats[index] = { ...sub, value: Number(event.target.value) };
+                    substats[index] = { ...sub, stat: stat as GearStatKey };
                     setDraft({ ...draft, substats });
                   }}
                 />
-              </label>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <FieldSelect
-            label="Hero exclusive"
-            value={draft.exclusive_hero_slug}
-            options={[
-              { value: '', label: 'None' },
-              ...heroes.map((hero) => ({ value: hero.slug, label: hero.name })),
-            ]}
-            onChange={(exclusive_hero_slug) =>
-              setDraft({
-                ...draft,
-                exclusive_hero_slug,
-                exclusive_faction: exclusive_hero_slug ? '' : draft.exclusive_faction,
-              })
-            }
-          />
-          <FieldSelect
-            label="Faction exclusive"
-            value={draft.exclusive_faction}
-            options={[
-              { value: '', label: 'None' },
-              ...FACTIONS.filter((faction) => faction !== 'unaffiliated').map((faction) => ({
-                value: faction,
-                label: FACTION_DISPLAY_NAMES[faction],
-              })),
-            ]}
-            onChange={(exclusive_faction) =>
-              setDraft({
-                ...draft,
-                exclusive_faction,
-                exclusive_hero_slug: exclusive_faction ? '' : draft.exclusive_hero_slug,
-              })
-            }
-          />
+                <label className="form-group block">
+                  <span>Value</span>
+                  <input
+                    className="form-input mt-1 w-full"
+                    type="number"
+                    min={0}
+                    value={sub.value}
+                    onChange={(event) => {
+                      const substats = [...draft.substats];
+                      substats[index] = { ...sub, value: Number(event.target.value) };
+                      setDraft({ ...draft, substats });
+                    }}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
         {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
         {duplicateWarned && duplicate ? (
