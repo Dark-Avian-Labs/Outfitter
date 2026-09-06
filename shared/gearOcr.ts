@@ -25,6 +25,8 @@ export type OcrGearFields = {
   main_value: number;
   main_bonus: number;
   substats: { stat: GearStatKey; value: number }[];
+  exclusive_hero_slug?: string;
+  exclusive_faction?: string;
 };
 
 export type ParsedGearOcr = {
@@ -32,6 +34,12 @@ export type ParsedGearOcr = {
   slot: GearSlot | null;
   set_key: string | null;
   prefix: GearPrefix | null;
+  exclusive_hero_slug: string | null;
+};
+
+export type OcrHeroRef = {
+  slug: string;
+  name: string;
 };
 
 const STAT_ALIASES: readonly { pattern: string; stat: GearStatKey }[] = [
@@ -286,10 +294,71 @@ export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
     slot: base.slot ?? extra.slot,
     set_key: base.set_key ?? extra.set_key,
     prefix: base.prefix ?? extra.prefix,
+    exclusive_hero_slug: base.exclusive_hero_slug ?? extra.exclusive_hero_slug,
   };
 }
 
-export function parseGearOcr(text: string): ParsedGearOcr {
+function isValueJunkLine(line: string): boolean {
+  if (allNumbers(line).length > 0) return false;
+  return (
+    hasPhrase(line, 'EXCLUSIVE') ||
+    hasPhrase(line, 'MYTHIC GEAR') ||
+    hasPhrase(line, 'VARIANT') ||
+    hasPhrase(line, 'ANCIENT') ||
+    /^(T[123]|\+\d+)$/.test(line)
+  );
+}
+
+function valueSourceFromLines(
+  lines: string[],
+  index: number,
+  rest: string,
+  isMain: boolean,
+): string {
+  let source = rest;
+  if (allNumbers(source).length > 0) return source;
+  const last = isMain ? Math.min(lines.length, index + 4) : Math.min(lines.length, index + 2);
+  for (let look = index + 1; look < last; look += 1) {
+    const next = lines[look];
+    if (!next) continue;
+    if (matchStat(next)) break;
+    if (isValueJunkLine(next)) continue;
+    source = `${source} ${next}`.trim();
+    if (allNumbers(source).length > 0) break;
+    if (!isMain) break;
+  }
+  return source;
+}
+
+function findExclusiveHero(blob: string, heroes: readonly OcrHeroRef[]): string | null {
+  if (heroes.length === 0) return null;
+  const spaced = blob.replace(/\n/g, ' ');
+  const needles = heroes
+    .map((hero) => ({
+      slug: hero.slug,
+      needle: normalizeOcrText(hero.name).replace(/\n/g, ' '),
+    }))
+    .filter((entry) => entry.needle.length >= 3)
+    .sort((a, b) => b.needle.length - a.needle.length);
+
+  for (const { slug, needle } of needles) {
+    if (hasPhrase(spaced, `${needle} EXCLUSIVE`) || hasPhrase(spaced, `EXCLUSIVE ${needle}`)) {
+      return slug;
+    }
+  }
+  for (const { slug, needle } of needles) {
+    if (SLOT_NEEDLES.some(({ needle: slot }) => hasPhrase(spaced, `${needle}S ${slot}`))) {
+      return slug;
+    }
+  }
+  if (!hasPhrase(spaced, 'EXCLUSIVE')) return null;
+  for (const { slug, needle } of needles) {
+    if (hasPhrase(spaced, needle)) return slug;
+  }
+  return null;
+}
+
+export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): ParsedGearOcr {
   const lines = ocrLines(text);
   const blob = lines.join('\n');
   const stats: DetectedGearStat[] = [];
@@ -301,12 +370,7 @@ export function parseGearOcr(text: string): ParsedGearOcr {
     const matched = matchStat(line);
     if (!matched) continue;
     const isMain = stats.length === 0;
-    let source = matched.rest;
-    const next = lines[index + 1];
-    const restHasValue = allNumbers(matched.rest).length > 0;
-    if (next && !matchStat(next) && (isMain || !restHasValue)) {
-      source = `${matched.rest} ${next}`.trim();
-    }
+    const source = valueSourceFromLines(lines, index, matched.rest, isMain);
     const parsed = isMain
       ? parseValueAndBonus(source, matched.stat)
       : (() => {
@@ -324,11 +388,13 @@ export function parseGearOcr(text: string): ParsedGearOcr {
 
   salvageMainStat(stats, blob);
 
+  const slot = findSlot(lines);
   return {
     stats,
-    slot: findSlot(lines),
+    slot,
     set_key: findSetKey(blob),
     prefix: findPrefix(blob),
+    exclusive_hero_slug: slot === 'ring' ? null : findExclusiveHero(blob, heroes),
   };
 }
 
@@ -359,7 +425,8 @@ export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedG
     detected.length === 0 &&
     parsed.slot == null &&
     parsed.set_key == null &&
-    parsed.prefix == null
+    parsed.prefix == null &&
+    parsed.exclusive_hero_slug == null
   ) {
     return draft;
   }
@@ -378,14 +445,19 @@ export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedG
     setKey = slotSets[0]?.key ?? setKey;
   }
   const prefix = parsed.prefix ?? draft.prefix;
+  const exclusive =
+    parsed.exclusive_hero_slug && slot !== 'ring'
+      ? { exclusive_hero_slug: parsed.exclusive_hero_slug, exclusive_faction: '' }
+      : {};
   if (!main) {
-    return { ...draft, slot, set_key: setKey, prefix };
+    return { ...draft, slot, set_key: setKey, prefix, ...exclusive };
   }
   return {
     ...draft,
     slot,
     set_key: setKey,
     prefix,
+    ...exclusive,
     main_stat: main.stat,
     main_value: main.value,
     main_bonus: Math.min(main.bonus ?? 0, MAIN_STAT_BONUS_MAX[main.stat] ?? 0),

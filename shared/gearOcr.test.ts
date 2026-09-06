@@ -337,3 +337,60 @@ ATK 391
     expect(merged.stats[0]).toEqual({ stat: 'hp', value: 3600 });
   });
 });
+
+describe('exclusive gear OCR', () => {
+  const vierna = [{ slug: 'vierna', name: 'Vierna' }] as const;
+  const exclusivePanel = `
+Mythic Gear
+Vierna's Bangle
+VIERNA
+Exclusive
+ATK Bonus
+66%
+Crit. Rate 22%
+Crit. DMG 36.5%
+ATK Spd. 71
+Rage Regen 18.5%
+`;
+
+  it('skips Exclusive between the main-stat label and its value', () => {
+    expect(parseGearOcr(exclusivePanel, vierna).stats).toEqual([
+      { stat: 'atkBonus', value: 66 },
+      { stat: 'critRate', value: 22 },
+      { stat: 'critDmg', value: 36.5 },
+      { stat: 'atkSpd', value: 71 },
+      { stat: 'rageRegen', value: 18.5 },
+    ]);
+  });
+
+  it('reads the hero from the exclusive banner and leaves set empty', () => {
+    expect(parseGearOcr(exclusivePanel, vierna)).toMatchObject({
+      slot: 'bangle',
+      set_key: null,
+      prefix: 'none',
+      exclusive_hero_slug: 'vierna',
+    });
+  });
+
+  it('fills hero exclusive without inventing a set', () => {
+    const next = applyOcrStats(
+      {
+        slot: 'weapon',
+        set_key: 'calamity',
+        prefix: 'none',
+        main_stat: 'atk',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+        exclusive_hero_slug: '',
+        exclusive_faction: 'gold',
+      },
+      parseGearOcr(exclusivePanel, vierna),
+    );
+    expect(next.slot).toBe('bangle');
+    expect(next.exclusive_hero_slug).toBe('vierna');
+    expect(next.exclusive_faction).toBe('');
+    expect(next.main_stat).toBe('atkBonus');
+    expect(next.main_value).toBe(66);
+  });
+});
