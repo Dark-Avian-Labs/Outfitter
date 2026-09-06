@@ -39,6 +39,10 @@ describe('gearHasOutOfRangeStats', () => {
     expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'hp', main_value: 3960, main_bonus: 0 })).toBe(false);
   });
 
+  it('accepts a +16 ATK Speed amulet main of 220', () => {
+    expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atkSpd', main_value: 220, main_bonus: 0 })).toBe(false);
+  });
+
   it('ignores empty sub slots', () => {
     expect(
       gearHasOutOfRangeStats({
