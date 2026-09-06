@@ -116,7 +116,11 @@ function pickMainValue(stat: GearStatKey, numbers: number[]): number | null {
   const subMax = SUBSTAT_RANGE[stat].max;
   const mains = numbers.filter((n) => n > subMax);
   if (mains.length > 0) return Math.max(...mains);
-  return numbers[0] ?? null;
+  const first = numbers[0];
+  const second = numbers[1];
+  // Icon OCR often prefixes a 1-digit integer (e.g. "7 ATK Bonus 3.5%").
+  if (second != null && first != null && Number.isInteger(first) && first < 10) return second;
+  return first ?? null;
 }
 
 function parseValueAndBonus(
@@ -169,6 +173,18 @@ function promoteOutOfRangeMain(stats: DetectedGearStat[]): DetectedGearStat[] {
   if (index < 0) return stats;
   const main = stats[index];
   return [main, ...stats.filter((_, offset) => offset !== index)];
+}
+
+function orderMainsFirst(stats: DetectedGearStat[], slot: GearSlot | null): DetectedGearStat[] {
+  const wanted = slot === 'weapon' ? 'atk' : slot === 'armor' ? 'hp' : null;
+  if (wanted) {
+    const index = stats.findIndex((entry) => entry.stat === wanted);
+    if (index > 0) {
+      const main = stats[index]!;
+      return [main, ...stats.filter((_, offset) => offset !== index)];
+    }
+  }
+  return promoteOutOfRangeMain(stats);
 }
 
 function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
@@ -306,10 +322,11 @@ export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
       stats[existingIndex] = { ...existing, value: entry.value };
     }
   }
+  const slot = base.slot ?? extra.slot;
   return {
     ...base,
-    stats,
-    slot: base.slot ?? extra.slot,
+    stats: orderMainsFirst(stats, slot),
+    slot,
     set_key: base.set_key ?? extra.set_key,
     prefix: base.prefix ?? extra.prefix,
     exclusive_hero_slug: base.exclusive_hero_slug ?? extra.exclusive_hero_slug,
@@ -431,10 +448,9 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
     );
   }
 
-  salvageMainStat(stats, blob);
-  stats = promoteOutOfRangeMain(stats);
-
   const slot = findSlot(lines);
+  stats = orderMainsFirst(stats, slot);
+  salvageMainStat(stats, blob);
   const exclusiveHero = slot === 'ring' ? null : findExclusiveHero(blob, heroes);
   const exclusiveFaction = slot === 'ring' ? findExclusiveFaction(blob) : null;
   return {
@@ -469,7 +485,7 @@ function padSubstats(
 }
 
 export function applyOcrStats<T extends OcrGearFields>(draft: T, parsed: ParsedGearOcr): T {
-  const detected = parsed.stats;
+  const detected = orderMainsFirst(parsed.stats, parsed.slot);
   if (
     detected.length === 0 &&
     parsed.slot == null &&
