@@ -467,6 +467,31 @@ ATK 391
     const merged = mergeGearOcr(parseGearOcr('HP 2100\nATK Bonus 25.5%'), parseGearOcr('HP 3600\nATK Bonus 25.5%'));
     expect(merged.stats[0]).toEqual({ stat: 'hp', value: 3600 });
   });
+
+  it('prefers HP 3960 over a glued 23515 main', () => {
+    expect(
+      parseGearOcr(`
+Mythic Gear
+Constance Breastplate
+HP 23515 3960
+ATK Bonus 125.5%
+Healing Effect 23
+Crit. Rate 22.5%
+ATK 502
+`).stats.map((entry) => ({ stat: entry.stat, value: entry.value })),
+    ).toEqual([
+      { stat: 'hp', value: 3960 },
+      { stat: 'atkBonus', value: 25.5 },
+      { stat: 'healingEffect', value: 23 },
+      { stat: 'critRate', value: 22.5 },
+      { stat: 'atk', value: 502 },
+    ]);
+  });
+
+  it('replaces an over-cap first-pass HP with 3960 from a later pass', () => {
+    const merged = mergeGearOcr(parseGearOcr('HP 23515\nATK Bonus 25.5%'), parseGearOcr('HP 3960\nATK Bonus 25.5%'));
+    expect(merged.stats[0]).toEqual({ stat: 'hp', value: 3960 });
+  });
 });
 
 describe('exclusive gear OCR', () => {

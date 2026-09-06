@@ -78,6 +78,20 @@ export const MAIN_STAT_BONUS_MAX: Record<GearStatKey, number> = {
   atkSpd: 18,
 };
 
+export const MAIN_STAT_VALUE_MAX: Record<GearStatKey, number> = {
+  hp: 3960,
+  atk: 1141,
+  def: 720,
+  rageRegen: 71,
+  critRate: 71,
+  critDmg: 78,
+  atkSpd: 218,
+  healingEffect: 71,
+  atkBonus: 71,
+  defBonus: 71,
+  hpBonus: 71,
+};
+
 export const SLOT_MAIN_STATS: Record<GearSlot, readonly GearStatKey[]> = {
   weapon: ['atk'],
   armor: ['hp'],
@@ -195,6 +209,7 @@ export function isSubstatInRange(stat: GearStatKey, value: number): boolean {
 
 type GearRangeFields = {
   main_stat: GearStatKey;
+  main_value?: number;
   main_bonus: number;
   sub1_stat: GearStatKey | null;
   sub1_value: number | null;
@@ -208,6 +223,9 @@ type GearRangeFields = {
 
 export function outOfRangeGearLabels(piece: GearRangeFields): string[] {
   const labels: string[] = [];
+  if (piece.main_value != null && piece.main_value > MAIN_STAT_VALUE_MAX[piece.main_stat]) {
+    labels.push(GEAR_STAT_LABELS[piece.main_stat]);
+  }
   const bonusMax = MAIN_STAT_BONUS_MAX[piece.main_stat] ?? 0;
   if (piece.main_bonus < 0 || piece.main_bonus > bonusMax) {
     labels.push(`${GEAR_STAT_LABELS[piece.main_stat]} bonus`);
