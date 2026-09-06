@@ -100,10 +100,7 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
         }}
       />
       {fxStem ? (
-        <video className="gear-tile__fx" muted loop playsInline autoPlay preload="auto" aria-hidden>
-          <source src={`/gear/${fxStem}.webm`} type="video/webm" />
-          <source src={`/gear/${fxStem}.mp4`} type="video/mp4" />
-        </video>
+        <img className="gear-tile__fx" src={`/gear/${fxStem}.gif`} alt="" aria-hidden />
       ) : null}
       {overlay}
       {size >= 64 && gear.equipped_hero_name ? (
