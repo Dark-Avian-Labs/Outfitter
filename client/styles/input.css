@@ -2208,3 +2208,80 @@ html.ui-clear .stale-update-banner::after {
   font-size: 12px;
   color: var(--color-muted);
 }
+
+.reroll-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reroll-tool {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.reroll-tool img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.reroll-tool h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.reroll-tool p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.reroll-table col.col-action {
+  width: calc(32ch + 28px + 1.5rem);
+}
+
+.reroll-table .col-action {
+  font-size: 0.85rem;
+  overflow: hidden;
+}
+
+.reroll-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.reroll-action span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reroll-action img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.reroll-warn {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-warning);
+}
+
+.reroll-row--warn td {
+  background: color-mix(in oklab, var(--color-warning) 10%, transparent);
+}
+
+.reroll-target {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -25,7 +25,7 @@ export type RateableGear = {
 
 type SetFilter = 'any' | { except: readonly string[] } | readonly string[];
 
-type KeepRule = {
+export type KeepRule = {
   name: string;
   side: 'left' | 'right';
   sets: SetFilter;
@@ -38,7 +38,7 @@ type KeepRule = {
 const LEFT_KEYS = LEFT_SETS.map((set) => set.key);
 const RIGHT_KEYS = RIGHT_SETS.map((set) => set.key);
 
-const RANK_SCORE: Record<GearRank, number> = {
+export const RANK_SCORE: Record<GearRank, number> = {
   D: 0,
   C: 1,
   B: 2,
@@ -48,7 +48,7 @@ const RANK_SCORE: Record<GearRank, number> = {
   SSS: 6,
 };
 
-const HIGH_ROLL = 0.75;
+export const HIGH_ROLL = 0.75;
 
 export const KEEP_RULES: readonly KeepRule[] = [
   {
@@ -472,7 +472,7 @@ export const KEEP_RULES: readonly KeepRule[] = [
   },
 ];
 
-function keysForRule(rule: KeepRule): readonly string[] {
+export function keysForRule(rule: KeepRule): readonly string[] {
   const sideKeys = rule.side === 'left' ? LEFT_KEYS : RIGHT_KEYS;
   if (rule.sets === 'any') return sideKeys;
   if ('except' in rule.sets) {
@@ -526,7 +526,7 @@ function rollOnRule(piece: RateableGear, rule: KeepRule): Roll | null {
   return { rank: rankFromWanted(wanted), average, high };
 }
 
-function isKeep(piece: RateableGear, rule: KeepRule): boolean {
+export function isKeep(piece: RateableGear, rule: KeepRule): boolean {
   if (!keysForRule(rule).includes(piece.set_key)) return false;
   if (!rule.mains.includes(piece.main_stat)) return false;
   const subs = subsOf(piece);
