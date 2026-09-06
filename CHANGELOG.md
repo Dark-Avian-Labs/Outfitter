@@ -33,3 +33,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.9.0** `chore` [#25](https://github.com/Dark-Avian-Labs/Outfitter/pull/25): feat/gear rating filters
 - **v1.9.1** `fix(ui)`: Rating Filter - "All Ratings" was always ellipsed
 - **v1.10.0** `chore` [#26](https://github.com/Dark-Avian-Labs/Outfitter/pull/26): feat/reroll tab
+- **v1.10.1** `chore` [#27](https://github.com/Dark-Avian-Labs/Outfitter/pull/27): fix/rating keep label
