@@ -513,7 +513,7 @@ function rankFromWanted(wanted: { stat: GearStatKey; value: number }[]): GearRan
   return 'A';
 }
 
-type Roll = { rank: GearRank; average: number; high: number };
+type Roll = { rank: GearRank; average: number; high: number; wanted: number };
 type Hit = Roll & { ruleName: string };
 
 function rollOnRule(piece: RateableGear, rule: KeepRule): Roll | null {
@@ -523,7 +523,7 @@ function rollOnRule(piece: RateableGear, rule: KeepRule): Roll | null {
   const ratios = wanted.map((entry) => gaugeRatio(entry.stat, entry.value));
   const high = ratios.filter((ratio) => ratio >= HIGH_ROLL).length;
   const average = ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length;
-  return { rank: rankFromWanted(wanted), average, high };
+  return { rank: rankFromWanted(wanted), average, high, wanted: wanted.length };
 }
 
 export function isKeep(piece: RateableGear, rule: KeepRule): boolean {
@@ -537,6 +537,7 @@ function betterRoll(left: Roll, right: Roll): Roll {
   const rank = RANK_SCORE[right.rank] - RANK_SCORE[left.rank];
   if (rank > 0) return right;
   if (rank < 0) return left;
+  if (right.wanted !== left.wanted) return right.wanted > left.wanted ? right : left;
   if (right.average !== left.average) return right.average > left.average ? right : left;
   if (right.high !== left.high) return right.high > left.high ? right : left;
   return left;
