@@ -1955,7 +1955,7 @@ html.ui-clear .stale-update-banner::after {
 .gear-table {
   table-layout: fixed;
   width: 100%;
-  min-width: 52rem;
+  min-width: 68rem;
 }
 
 .gear-table col.col-icon,
@@ -1967,6 +1967,10 @@ html.ui-clear .stale-update-banner::after {
 .gear-table col.col-set,
 .gear-table col.col-main {
   width: calc(22ch + 2rem);
+}
+
+.gear-table col.col-rating {
+  width: calc(5ch + 0.5rem + 22ch + 2rem);
 }
 
 .gear-table col.col-stats {
@@ -1988,6 +1992,59 @@ html.ui-clear .stale-update-banner::after {
 .gear-table .col-type,
 .gear-table .col-set,
 .gear-table .col-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gear-table th.col-rating,
+.gear-table td.col-rating {
+  text-align: left;
+}
+
+.gear-rating {
+  display: grid;
+  grid-template-columns: 5ch minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  min-width: 0;
+}
+
+.gear-rating__rank {
+  font-weight: 900;
+  text-align: center;
+  line-height: 1;
+}
+
+.gear-rating__rank[data-rank='D'] {
+  color: var(--color-rarity-gray);
+}
+
+.gear-rating__rank[data-rank='C'] {
+  color: var(--color-rarity-green);
+}
+
+.gear-rating__rank[data-rank='B'] {
+  color: var(--color-rarity-blue);
+}
+
+.gear-rating__rank[data-rank='A'] {
+  color: var(--color-rarity-purple);
+}
+
+.gear-rating__rank[data-rank='S'] {
+  color: var(--color-rarity-gold);
+}
+
+.gear-rating__rank[data-rank='SS'] {
+  color: var(--color-rarity-orange);
+}
+
+.gear-rating__rank[data-rank='SSS'] {
+  color: var(--color-rarity-red);
+}
+
+.gear-rating__fit {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -13,6 +13,7 @@ import {
   gearSetBadgeSrc,
   outOfRangeGearLabels,
 } from '@shared/catalog';
+import { rateGear } from '@shared/gearRating';
 import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
@@ -371,6 +372,7 @@ export function OutfitterPage() {
                   <col className="col-set" />
                   <col className="col-main" />
                   <col className="col-stats" />
+                  <col className="col-rating" />
                   <col className="col-equipped" />
                 </colgroup>
                 <thead>
@@ -380,6 +382,7 @@ export function OutfitterPage() {
                     <th className="col-set">Set</th>
                     <th className="col-main">Main</th>
                     <th className="stats-col">Stats</th>
+                    <th className="col-rating">Rating</th>
                     <th className="col-equipped">Equipped</th>
                   </tr>
                 </thead>
@@ -391,6 +394,7 @@ export function OutfitterPage() {
                       piece.main_value + piece.main_bonus,
                     )}`;
                     const illegalLabels = outOfRangeGearLabels(piece);
+                    const rating = rateGear(piece);
                     return (
                       <tr
                         key={piece.id}
@@ -443,6 +447,16 @@ export function OutfitterPage() {
                                   value={entry.value}
                                 />
                               ))}
+                          </div>
+                        </td>
+                        <td className="col-rating">
+                          <div className="gear-rating">
+                            <span className="gear-rating__rank" data-rank={rating.rank}>
+                              {rating.rank}
+                            </span>
+                            <span className="gear-rating__fit" title={rating.ruleName ?? undefined}>
+                              {rating.ruleName ?? '-'}
+                            </span>
                           </div>
                         </td>
                         <td className="col-equipped">
