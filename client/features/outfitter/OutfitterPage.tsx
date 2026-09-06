@@ -13,6 +13,7 @@ import {
   gearSetBadgeSrc,
   outOfRangeGearLabels,
 } from '@shared/catalog';
+import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -121,16 +122,19 @@ export function OutfitterPage() {
 
   const filteredGear = useMemo(
     () =>
-      gear.filter((piece) => {
-        if (!matchesTriFilter(piece.slot, slotFilter)) return false;
-        if (setFilter && piece.set_key !== setFilter) return false;
-        if (mainFilter && piece.main_stat !== mainFilter) return false;
-        if (subFilter) {
-          const stats = [piece.sub1_stat, piece.sub2_stat, piece.sub3_stat, piece.sub4_stat];
-          if (!stats.includes(subFilter as GearView['main_stat'])) return false;
-        }
-        return true;
-      }),
+      gear
+        .filter((piece) => {
+          if (!matchesTriFilter(piece.slot, slotFilter)) return false;
+          if (setFilter && piece.set_key !== setFilter) return false;
+          if (mainFilter && piece.main_stat !== mainFilter) return false;
+          if (subFilter) {
+            const stats = [piece.sub1_stat, piece.sub2_stat, piece.sub3_stat, piece.sub4_stat];
+            if (!stats.includes(subFilter as GearView['main_stat'])) return false;
+          }
+          return true;
+        })
+        .slice()
+        .sort(compareInventoryGear),
     [gear, mainFilter, setFilter, slotFilter, subFilter],
   );
 
