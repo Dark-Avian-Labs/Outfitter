@@ -85,7 +85,7 @@ export const MAIN_STAT_VALUE_MAX: Record<GearStatKey, number> = {
   rageRegen: 71,
   critRate: 71,
   critDmg: 78,
-  atkSpd: 218,
+  atkSpd: 238,
   healingEffect: 71,
   atkBonus: 71,
   defBonus: 71,
