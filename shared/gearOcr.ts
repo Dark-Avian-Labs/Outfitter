@@ -157,6 +157,20 @@ function salvageMainStat(stats: DetectedGearStat[], blob: string): void {
   }
 }
 
+function isOutOfSubRange(entry: DetectedGearStat): boolean {
+  return entry.value > SUBSTAT_RANGE[entry.stat].max;
+}
+
+function promoteOutOfRangeMain(stats: DetectedGearStat[]): DetectedGearStat[] {
+  if (stats.length < 2) return stats;
+  const first = stats[0];
+  if (!first || isOutOfSubRange(first)) return stats;
+  const index = stats.findIndex((entry, offset) => offset > 0 && isOutOfSubRange(entry));
+  if (index < 0) return stats;
+  const main = stats[index];
+  return [main, ...stats.filter((_, offset) => offset !== index)];
+}
+
 function matchStat(line: string): { stat: GearStatKey; rest: string } | null {
   for (const alias of STAT_ALIASES) {
     const index = line.indexOf(alias.pattern);
@@ -392,7 +406,7 @@ function findExclusiveHero(blob: string, heroes: readonly OcrHeroRef[]): string 
 export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): ParsedGearOcr {
   const lines = ocrLines(text);
   const blob = lines.join('\n');
-  const stats: DetectedGearStat[] = [];
+  let stats: DetectedGearStat[] = [];
   const seen = new Set<GearStatKey>();
 
   for (let index = 0; index < lines.length; index += 1) {
@@ -418,6 +432,7 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
   }
 
   salvageMainStat(stats, blob);
+  stats = promoteOutOfRangeMain(stats);
 
   const slot = findSlot(lines);
   const exclusiveHero = slot === 'ring' ? null : findExclusiveHero(blob, heroes);
