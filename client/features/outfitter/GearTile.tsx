@@ -91,17 +91,19 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
       style={{ width: size, height: size }}
       title={setLabel(gear.set_key)}
     >
-      <img
-        className="gear-tile__art"
-        src={src}
-        alt=""
-        onError={() => {
-          if (src !== emptySrc) setSrc(emptySrc);
-        }}
-      />
-      {fxStem ? (
-        <img className="gear-tile__fx" src={`/gear/${fxStem}.gif`} alt="" aria-hidden />
-      ) : null}
+      <div className="gear-tile__clip">
+        <img
+          className="gear-tile__art"
+          src={src}
+          alt=""
+          onError={() => {
+            if (src !== emptySrc) setSrc(emptySrc);
+          }}
+        />
+        {fxStem ? (
+          <img className="gear-tile__fx" src={`/gear/${fxStem}.gif`} alt="" aria-hidden />
+        ) : null}
+      </div>
       {overlay}
       {size >= 64 && gear.equipped_hero_name ? (
         <span className="gear-tile__overlay gear-tile__overlay--br">{gear.equipped_hero_name}</span>

@@ -149,6 +149,13 @@ export function setActiveAccount(
   return row;
 }
 
+export function listHeroNames(db: Database.Database): { slug: string; name: string }[] {
+  return db.prepare(`SELECT slug, name FROM catalog_heroes WHERE active = 1`).all() as {
+    slug: string;
+    name: string;
+  }[];
+}
+
 export function listHeroes(db: Database.Database, accountId: number): HeroWithStats[] {
   return db
     .prepare(

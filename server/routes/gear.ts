@@ -30,7 +30,7 @@ gearRouter.post(
       return;
     }
     try {
-      const result = await recognizeGearStats(decoded);
+      const result = await recognizeGearStats(decoded, q.listHeroNames(getAppDb()));
       json(res, result);
     } catch (error) {
       const status = errorHttpStatus(error);
