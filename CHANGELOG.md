@@ -24,3 +24,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.3.3** `ci` [#16](https://github.com/Dark-Avian-Labs/Outfitter/pull/16): run Node jobs on 2 vCPU
 - **v1.3.4** `chore` [#17](https://github.com/Dark-Avian-Labs/Outfitter/pull/17): fix/gear table column widths
 - **v1.4.0** `chore` [#18](https://github.com/Dark-Avian-Labs/Outfitter/pull/18): feat/gear entry polish
+- **v1.5.0** `chore` [#19](https://github.com/Dark-Avian-Labs/Outfitter/pull/19): feat/inventory sort
