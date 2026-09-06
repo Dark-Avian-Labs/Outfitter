@@ -33,6 +33,7 @@ import { AccountBar } from './AccountBar';
 import { FieldSelect } from './FieldSelect';
 import { GearFormModal, type GearDraft } from './GearFormModal';
 import { EmptySlotTile, GearTile, StatGauge, type GearView } from './GearTile';
+import { RerollTab } from './RerollTab';
 import type { GameAccount, HeroRow, OutfitResult } from './types';
 import {
   STAR_ICONS,
@@ -42,7 +43,7 @@ import {
   renderStars,
 } from './worIcons';
 
-type Tab = 'gear' | 'equipment' | 'outfit';
+type Tab = 'gear' | 'reroll' | 'equipment' | 'outfit';
 
 export function OutfitterPage() {
   const [tab, setTab] = useState<Tab>('gear');
@@ -285,7 +286,7 @@ export function OutfitterPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {(['gear', 'equipment', 'outfit'] as const).map((item) => (
+          {(['gear', 'reroll', 'equipment', 'outfit'] as const).map((item) => (
             <button
               key={item}
               type="button"
@@ -510,6 +511,17 @@ export function OutfitterPage() {
             </div>
           </div>
         </>
+      ) : null}
+
+      {tab === 'reroll' ? (
+        <RerollTab
+          gear={gear}
+          onOpenGear={(piece) => {
+            setEditingGear(piece);
+            setFormError(null);
+            setGearFormOpen(true);
+          }}
+        />
       ) : null}
 
       {tab === 'equipment' ? (
