@@ -336,6 +336,84 @@ ATK                    1056
     expect(parseGearOcr('Mythic Gear\nAstral Guardian Weapon\nATK 1056').set_key).toBe('astral_guardian');
     expect(parseGearOcr('Mythic Gear\nGuardian Bangle\nATK Bonus 60%').set_key).toBe('guardian');
   });
+
+  it('keeps a Lights Grace weapon when OCR reads ATK after the bonus line', () => {
+    const parsed = parseGearOcr(`
+Mythic Gear
+Light's Grace Weapon
+ATK Bonus 7 3.5%
+ATK Spd. 42
+DEF Bonus 24%
+HP Bonus 15%
+ATK 1056
+`);
+    expect(parsed).toMatchObject({ slot: 'weapon', set_key: 'lights_grace' });
+    expect(parsed.stats.map((entry) => ({ stat: entry.stat, value: entry.value }))).toEqual([
+      { stat: 'atk', value: 1056 },
+      { stat: 'atkBonus', value: 3.5 },
+      { stat: 'atkSpd', value: 42 },
+      { stat: 'defBonus', value: 24 },
+      { stat: 'hpBonus', value: 15 },
+    ]);
+    const next = applyOcrStats(
+      {
+        slot: 'bangle',
+        set_key: 'fatality',
+        prefix: 'none',
+        main_stat: 'atkBonus',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+      },
+      parsed,
+    );
+    expect(next.slot).toBe('weapon');
+    expect(next.set_key).toBe('lights_grace');
+    expect(next.main_stat).toBe('atk');
+    expect(next.main_value).toBe(1056);
+    expect(next.substats.slice(0, 4)).toEqual([
+      { stat: 'atkBonus', value: 3.5 },
+      { stat: 'atkSpd', value: 42 },
+      { stat: 'defBonus', value: 24 },
+      { stat: 'hpBonus', value: 15 },
+    ]);
+  });
+
+  it('promotes ATK onto a weapon after a second OCR pass finds the main', () => {
+    const merged = mergeGearOcr(
+      parseGearOcr(`
+Mythic Gear
+Light's Grace Weapon
+ATK Bonus 3.5%
+ATK Spd. 42
+DEF Bonus 24%
+HP Bonus 15%
+`),
+      parseGearOcr(`
+ATK 1056
+ATK Bonus 3.5%
+`),
+    );
+    expect(merged.slot).toBe('weapon');
+    expect(merged.set_key).toBe('lights_grace');
+    expect(merged.stats[0]).toEqual({ stat: 'atk', value: 1056 });
+    const next = applyOcrStats(
+      {
+        slot: 'bangle',
+        set_key: 'fatality',
+        prefix: 'none',
+        main_stat: 'atkBonus',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+      },
+      merged,
+    );
+    expect(next.slot).toBe('weapon');
+    expect(next.set_key).toBe('lights_grace');
+    expect(next.main_stat).toBe('atk');
+    expect(next.main_value).toBe(1056);
+  });
 });
 
 describe('armor HP main OCR', () => {
