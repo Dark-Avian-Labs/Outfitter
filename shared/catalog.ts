@@ -188,6 +188,47 @@ export function gaugeRatio(stat: GearStatKey, value: number): number {
   return Math.max(0, Math.min(1, value / max));
 }
 
+export function isSubstatInRange(stat: GearStatKey, value: number): boolean {
+  const range = SUBSTAT_RANGE[stat];
+  return value >= range.min && value <= range.max;
+}
+
+type GearRangeFields = {
+  main_stat: GearStatKey;
+  main_bonus: number;
+  sub1_stat: GearStatKey | null;
+  sub1_value: number | null;
+  sub2_stat: GearStatKey | null;
+  sub2_value: number | null;
+  sub3_stat: GearStatKey | null;
+  sub3_value: number | null;
+  sub4_stat: GearStatKey | null;
+  sub4_value: number | null;
+};
+
+export function outOfRangeGearLabels(piece: GearRangeFields): string[] {
+  const labels: string[] = [];
+  const bonusMax = MAIN_STAT_BONUS_MAX[piece.main_stat] ?? 0;
+  if (piece.main_bonus < 0 || piece.main_bonus > bonusMax) {
+    labels.push(`${GEAR_STAT_LABELS[piece.main_stat]} bonus`);
+  }
+  const subs = [
+    { stat: piece.sub1_stat, value: piece.sub1_value },
+    { stat: piece.sub2_stat, value: piece.sub2_value },
+    { stat: piece.sub3_stat, value: piece.sub3_value },
+    { stat: piece.sub4_stat, value: piece.sub4_value },
+  ];
+  for (const entry of subs) {
+    if (entry.stat == null || entry.value == null) continue;
+    if (!isSubstatInRange(entry.stat, entry.value)) labels.push(GEAR_STAT_LABELS[entry.stat]);
+  }
+  return labels;
+}
+
+export function gearHasOutOfRangeStats(piece: GearRangeFields): boolean {
+  return outOfRangeGearLabels(piece).length > 0;
+}
+
 export function gaugeColor(ratio: number): string {
   const pct = ratio * 100;
   if (pct >= 100) return 'var(--color-rarity-red)';

@@ -708,6 +708,7 @@ html.ui-acrylic:not(.dark) {
   .form-input {
     width: 100%;
     box-sizing: border-box;
+    height: 40px;
     padding: 8px 10px;
     font-size: 14px;
     line-height: 1.2;
@@ -1006,6 +1007,8 @@ html.ui-acrylic:not(.dark) {
 
   .user-menu-select-trigger {
     width: 100%;
+    box-sizing: border-box;
+    height: 40px;
     border: 1px solid var(--color-glass-border);
     border-radius: 10px;
     padding: 8px 10px;
@@ -1775,6 +1778,7 @@ html.ui-clear .stale-update-banner::after {
 }
 
 .filter-group .user-menu-select-trigger {
+  height: auto;
   border: none;
   background: transparent;
   padding: 4px 0;
@@ -1936,6 +1940,14 @@ html.ui-clear .stale-update-banner::after {
   background: oklch(100% 0 0 / 0.03);
 }
 
+.table-container tbody tr.gear-row--illegal {
+  background: color-mix(in oklab, var(--color-danger) 16%, transparent);
+}
+
+.table-container tbody tr.gear-row--illegal:hover {
+  background: color-mix(in oklab, var(--color-danger) 24%, transparent);
+}
+
 .table-container tbody tr:last-child {
   border-bottom: none;
 }
@@ -2028,6 +2040,24 @@ html.ui-clear .stale-update-banner::after {
   object-fit: contain;
 }
 
+.gear-tile__fx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear-tile__fx {
+    display: none;
+  }
+}
+
 .gear-tile__slot {
   position: absolute;
   inset: 0;
@@ -2041,6 +2071,7 @@ html.ui-clear .stale-update-banner::after {
 
 .gear-tile__overlay {
   position: absolute;
+  z-index: 2;
   max-width: 45%;
   font-size: 9px;
   line-height: 1.1;

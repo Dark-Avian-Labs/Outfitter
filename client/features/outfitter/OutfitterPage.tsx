@@ -11,6 +11,7 @@ import {
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
+  outOfRangeGearLabels,
 } from '@shared/catalog';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
@@ -385,10 +386,16 @@ export function OutfitterPage() {
                       piece.main_stat,
                       piece.main_value + piece.main_bonus,
                     )}`;
+                    const illegalLabels = outOfRangeGearLabels(piece);
                     return (
                       <tr
                         key={piece.id}
-                        className="cursor-pointer"
+                        className={`cursor-pointer${illegalLabels.length > 0 ? ' gear-row--illegal' : ''}`}
+                        title={
+                          illegalLabels.length > 0
+                            ? `Out of range: ${illegalLabels.join(', ')}`
+                            : undefined
+                        }
                         onClick={() => {
                           setEditingGear(piece);
                           setFormError(null);

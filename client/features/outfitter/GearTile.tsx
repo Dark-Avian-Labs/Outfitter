@@ -97,6 +97,12 @@ export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number })
           if (src !== emptySrc) setSrc(emptySrc);
         }}
       />
+      {gear.prefix === 'variant' ? (
+        <video className="gear-tile__fx" muted loop playsInline autoPlay preload="auto" aria-hidden>
+          <source src="/gear/variant-fx.webm" type="video/webm" />
+          <source src="/gear/variant-fx.mp4" type="video/mp4" />
+        </video>
+      ) : null}
       {overlay}
       {size >= 64 && gear.equipped_hero_name ? (
         <span className="gear-tile__overlay gear-tile__overlay--br">{gear.equipped_hero_name}</span>
