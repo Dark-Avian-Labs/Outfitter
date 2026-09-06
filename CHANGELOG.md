@@ -37,3 +37,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.10.2** `chore` [#28](https://github.com/Dark-Avian-Labs/Outfitter/pull/28): fix/ocr promote weapon main
 - **v1.10.3** `chore` [#29](https://github.com/Dark-Avian-Labs/Outfitter/pull/29): fix/ocr weapon slot after merge
 - **v1.10.4** `chore` [#30](https://github.com/Dark-Avian-Labs/Outfitter/pull/30): fix/ocr main value cap
+- **v1.10.5** `chore` [#31](https://github.com/Dark-Avian-Labs/Outfitter/pull/31): fix/atk spd main cap
