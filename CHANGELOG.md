@@ -34,3 +34,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.9.1** `fix(ui)`: Rating Filter - "All Ratings" was always ellipsed
 - **v1.10.0** `chore` [#26](https://github.com/Dark-Avian-Labs/Outfitter/pull/26): feat/reroll tab
 - **v1.10.1** `chore` [#27](https://github.com/Dark-Avian-Labs/Outfitter/pull/27): fix/rating keep label
+- **v1.10.2** `chore` [#28](https://github.com/Dark-Avian-Labs/Outfitter/pull/28): fix/ocr promote weapon main
