@@ -283,6 +283,59 @@ ATK Spd.               78
       bonus: 70,
     });
   });
+
+  it('reads ATK 1056 as the weapon main when OCR lists it after the subs', () => {
+    const panel = `
+Mythic Gear
+Astral Guardian Weapon
++16
+T3
+HP Bonus               16%
+DEF Bonus              22.5%
+HP                     280
+DEF                    205
+ATK                    1056
+`;
+    const parsed = parseGearOcr(panel);
+    expect(parsed).toMatchObject({
+      slot: 'weapon',
+      set_key: 'astral_guardian',
+    });
+    expect(parsed.stats.map((entry) => ({ stat: entry.stat, value: entry.value }))).toEqual([
+      { stat: 'atk', value: 1056 },
+      { stat: 'hpBonus', value: 16 },
+      { stat: 'defBonus', value: 22.5 },
+      { stat: 'hp', value: 280 },
+      { stat: 'def', value: 205 },
+    ]);
+    const next = applyOcrStats(
+      {
+        slot: 'bangle',
+        set_key: 'fatality',
+        prefix: 'none',
+        main_stat: 'atkBonus',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+      },
+      parsed,
+    );
+    expect(next.slot).toBe('weapon');
+    expect(next.set_key).toBe('astral_guardian');
+    expect(next.main_stat).toBe('atk');
+    expect(next.main_value).toBe(1056);
+    expect(next.substats.slice(0, 4)).toEqual([
+      { stat: 'hpBonus', value: 16 },
+      { stat: 'defBonus', value: 22.5 },
+      { stat: 'hp', value: 280 },
+      { stat: 'def', value: 205 },
+    ]);
+  });
+
+  it('does not treat Astral Guardian as the Guardian set', () => {
+    expect(parseGearOcr('Mythic Gear\nAstral Guardian Weapon\nATK 1056').set_key).toBe('astral_guardian');
+    expect(parseGearOcr('Mythic Gear\nGuardian Bangle\nATK Bonus 60%').set_key).toBe('guardian');
+  });
 });
 
 describe('armor HP main OCR', () => {
