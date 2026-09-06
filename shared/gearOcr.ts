@@ -435,9 +435,9 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
     const parsed = isMain
       ? parseValueAndBonus(source, matched.stat)
       : (() => {
-        const value = allNumbers(source)[0] ?? null;
-        return value == null ? null : { value, bonus: 0 };
-      })();
+          const value = allNumbers(source)[0] ?? null;
+          return value == null ? null : { value, bonus: 0 };
+        })();
     if (parsed == null || seen.has(matched.stat)) continue;
     seen.add(matched.stat);
     stats.push(
