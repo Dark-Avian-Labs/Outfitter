@@ -13,7 +13,7 @@ import {
   gearSetBadgeSrc,
   outOfRangeGearLabels,
 } from '@shared/catalog';
-import { rateGear } from '@shared/gearRating';
+import { GEAR_RANKS, KEEP_RULES, rateGear } from '@shared/gearRating';
 import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
@@ -58,6 +58,8 @@ export function OutfitterPage() {
   const [setFilter, setSetFilter] = useState('');
   const [mainFilter, setMainFilter] = useState('');
   const [subFilter, setSubFilter] = useState('');
+  const [ratingFilter, setRatingFilter] = useState('');
+  const [ruleFilter, setRuleFilter] = useState('');
   const [classFilter, setClassFilter] = useState<TriFilterMap>({});
   const [factionFilter, setFactionFilter] = useState<TriFilterMap>({});
   const [rarityFilter, setRarityFilter] = useState<TriFilterMap>({});
@@ -132,11 +134,17 @@ export function OutfitterPage() {
             const stats = [piece.sub1_stat, piece.sub2_stat, piece.sub3_stat, piece.sub4_stat];
             if (!stats.includes(subFilter as GearView['main_stat'])) return false;
           }
+          if (ratingFilter || ruleFilter) {
+            const rating = rateGear(piece);
+            if (ratingFilter && rating.rank !== ratingFilter) return false;
+            if (ruleFilter === 'none' && rating.ruleName != null) return false;
+            if (ruleFilter && ruleFilter !== 'none' && rating.ruleName !== ruleFilter) return false;
+          }
           return true;
         })
         .slice()
         .sort(compareInventoryGear),
-    [gear, mainFilter, setFilter, slotFilter, subFilter],
+    [gear, mainFilter, ratingFilter, ruleFilter, setFilter, slotFilter, subFilter],
   );
 
   const equippedHeroes = useMemo(() => {
@@ -348,6 +356,29 @@ export function OutfitterPage() {
                 ...Object.entries(GEAR_STAT_LABELS).map(([value, label]) => ({ value, label })),
               ]}
               onChange={setSubFilter}
+            />
+            <FieldSelect
+              className="min-w-[8rem]"
+              label="Rating"
+              inline
+              value={ratingFilter}
+              options={[
+                { value: '', label: 'All ratings' },
+                ...GEAR_RANKS.map((rank) => ({ value: rank, label: rank })),
+              ]}
+              onChange={setRatingFilter}
+            />
+            <FieldSelect
+              className="min-w-[16rem]"
+              label="Rule"
+              inline
+              value={ruleFilter}
+              options={[
+                { value: '', label: 'All rules' },
+                { value: 'none', label: 'No rule' },
+                ...KEEP_RULES.map((rule) => ({ value: rule.name, label: rule.name })),
+              ]}
+              onChange={setRuleFilter}
             />
             <div className="stats-bar-actions ml-auto">
               <button

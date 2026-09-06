@@ -1997,11 +1997,6 @@ html.ui-clear .stale-update-banner::after {
   white-space: nowrap;
 }
 
-.gear-table th.col-rating,
-.gear-table td.col-rating {
-  text-align: left;
-}
-
 .gear-rating {
   display: grid;
   grid-template-columns: 5ch minmax(0, 1fr);
@@ -2048,6 +2043,7 @@ html.ui-clear .stale-update-banner::after {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
 }
 
 .gear-table .gear-tile {
@@ -2063,7 +2059,6 @@ html.ui-clear .stale-update-banner::after {
   object-fit: cover;
 }
 
-.gear-table th.stats-col,
 .gear-table td.stats-col {
   text-align: left;
 }
