@@ -284,3 +284,56 @@ ATK Spd.               78
     });
   });
 });
+
+describe('armor HP main OCR', () => {
+  const annihilatingPanel = `
++16
+Ancient Mythic Gear
+Ancient: Annihilating Might Breastplate+
+HP 2100
+3600
+ATK Bonus 25.5%
+Crit. Rate 19%
+Crit. DMG 37.5%
+DEF Bonus 21%
+`;
+
+  it('prefers the HP value above substat range when OCR emits 2100 and 3600', () => {
+    expect(parseGearOcr(annihilatingPanel).stats[0]).toEqual({ stat: 'hp', value: 3600 });
+    expect(parseGearOcr(annihilatingPanel).slot).toBe('armor');
+  });
+
+  it('uses 3600 from elsewhere in the panel when the HP line is only 2100', () => {
+    expect(
+      parseGearOcr(`
+HP 2100
+ATK Bonus 25.5%
+3600
+Crit. Rate 19%
+`).stats[0],
+    ).toEqual({ stat: 'hp', value: 3600 });
+  });
+
+  it('corrects +16 armor HP 2100 when 3600 is missing from the text', () => {
+    expect(
+      parseGearOcr(`
++16
+Ancient: Salvation Breastplate+
+HP 2100
+ATK Spd 61
+Rage Regen 16.5%
+Healing Effect 23
+ATK 391
+`).stats[0],
+    ).toEqual({ stat: 'hp', value: 3600 });
+  });
+
+  it('reads HP when the heart icon glues as a letter prefix', () => {
+    expect(parseGearOcrText('YHP 3600')).toEqual([{ stat: 'hp', value: 3600 }]);
+  });
+
+  it('replaces a first-pass HP 2100 with a later-pass 3600', () => {
+    const merged = mergeGearOcr(parseGearOcr('HP 2100\nATK Bonus 25.5%'), parseGearOcr('HP 3600\nATK Bonus 25.5%'));
+    expect(merged.stats[0]).toEqual({ stat: 'hp', value: 3600 });
+  });
+});
