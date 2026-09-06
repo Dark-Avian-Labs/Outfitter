@@ -30,3 +30,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.6.1** `chore` [#22](https://github.com/Dark-Avian-Labs/Outfitter/pull/22): fix/gear fx gif
 - **v1.7.0** `chore` [#23](https://github.com/Dark-Avian-Labs/Outfitter/pull/23): feat/exclusive ocr
 - **v1.8.0** `chore` [#24](https://github.com/Dark-Avian-Labs/Outfitter/pull/24): feat/gear rating
+- **v1.9.0** `chore` [#25](https://github.com/Dark-Avian-Labs/Outfitter/pull/25): feat/gear rating filters
