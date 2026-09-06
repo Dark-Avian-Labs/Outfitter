@@ -28,3 +28,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.5.1** `chore` [#20](https://github.com/Dark-Avian-Labs/Outfitter/pull/20): fix/variant fx scroll flicker
 - **v1.6.0** `chore` [#21](https://github.com/Dark-Avian-Labs/Outfitter/pull/21): feat/ancient gear fx
 - **v1.6.1** `chore` [#22](https://github.com/Dark-Avian-Labs/Outfitter/pull/22): fix/gear fx gif
+- **v1.7.0** `chore` [#23](https://github.com/Dark-Avian-Labs/Outfitter/pull/23): feat/exclusive ocr
