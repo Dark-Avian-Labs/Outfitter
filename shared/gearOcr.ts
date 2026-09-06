@@ -118,7 +118,6 @@ function pickMainValue(stat: GearStatKey, numbers: number[]): number | null {
   if (mains.length > 0) return Math.max(...mains);
   const first = numbers[0];
   const second = numbers[1];
-  // Icon OCR often prefixes a 1-digit integer (e.g. "7 ATK Bonus 3.5%").
   if (second != null && first != null && Number.isInteger(first) && first < 10) return second;
   return first ?? null;
 }
@@ -436,9 +435,9 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
     const parsed = isMain
       ? parseValueAndBonus(source, matched.stat)
       : (() => {
-          const value = allNumbers(source)[0] ?? null;
-          return value == null ? null : { value, bonus: 0 };
-        })();
+        const value = allNumbers(source)[0] ?? null;
+        return value == null ? null : { value, bonus: 0 };
+      })();
     if (parsed == null || seen.has(matched.stat)) continue;
     seen.add(matched.stat);
     stats.push(
