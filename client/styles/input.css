@@ -2013,11 +2013,18 @@ html.ui-clear .stale-update-banner::after {
 
 .gear-tile {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   isolation: isolate;
   border-radius: 6px;
   background: color-mix(in oklab, var(--color-danger) 35%, var(--color-surface-300));
   border: 1px solid color-mix(in oklab, var(--color-danger) 40%, transparent);
+}
+
+.gear-tile__clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
 }
 
 .gear-tile--ancient {
@@ -2083,12 +2090,15 @@ html.ui-clear .stale-update-banner::after {
 }
 
 .gear-tile__overlay--tl {
-  top: 2px;
-  left: 2px;
+  top: -2px;
+  left: -2px;
+  z-index: 3;
   width: 18px;
   height: 18px;
   object-fit: cover;
   padding: 0;
+  border: 1px solid var(--color-rarity-gold);
+  box-sizing: border-box;
 }
 
 .gear-tile__overlay--bl {
