@@ -363,7 +363,7 @@ export function OutfitterPage() {
               inline
               value={ratingFilter}
               options={[
-                { value: '', label: 'All ratings' },
+                { value: '', label: 'All' },
                 ...GEAR_RANKS.map((rank) => ({ value: rank, label: rank })),
               ]}
               onChange={setRatingFilter}
