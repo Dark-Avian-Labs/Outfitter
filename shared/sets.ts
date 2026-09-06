@@ -154,6 +154,46 @@ export const RIGHT_SETS: readonly GearSetDef[] = [
 
 export const ALL_SETS: readonly GearSetDef[] = [...LEFT_SETS, ...RIGHT_SETS];
 
+export const INVENTORY_SET_KEYS = [
+  'greyfang',
+  'wings_of_grace',
+  'cataclysm',
+  'tempered_will',
+  'hells_lament',
+  'unshaken_will',
+  'morale',
+  'undying_savage',
+  'infernal_roar',
+  'soulbound_arcana',
+  'invigoration',
+  'ageless_wrath',
+  'asclepius',
+  'the_insight',
+  'the_wisdom',
+  'the_doom',
+  'the_styx',
+  'night_terror',
+  'the_glacier',
+  'hawk_eye',
+  'mana_spring',
+  'fracture',
+  'curse',
+  'fatality',
+  'guardian',
+  'goldmane',
+  'drakefire',
+  'astral_guardian',
+  'lights_grace',
+  'wicked_vengeance',
+  'immortal_warrior',
+  'warlord',
+  'salvation',
+  'life_force',
+  'calamity',
+  'whirlwind',
+  'annihilating_might',
+] as const;
+
 export const SET_BY_KEY: Record<string, GearSetDef> = Object.fromEntries(
   ALL_SETS.map((set) => [set.key, set]),
 );
