@@ -355,6 +355,7 @@ export function GearFormModal({
             <div className="grid grid-cols-[1.75rem_1fr_6rem] items-end gap-2">
               <span className="h-10 w-7 shrink-0" aria-hidden />
               <FieldSelect
+                className="col-span-2"
                 label="Main stat"
                 value={draft.main_stat}
                 options={mainOptions.map((stat) => ({
