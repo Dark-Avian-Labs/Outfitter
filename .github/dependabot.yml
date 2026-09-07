@@ -24,9 +24,6 @@ updates:
       time: '00:00'
     cooldown:
       default-days: 1
-    # Actions are pinned to commit SHAs in the workflows; Dependabot updates
-    # the pinned SHA (and the version comment) for every release, so minor and
-    # patch updates must not be ignored here.
     groups:
       github-actions:
         patterns:

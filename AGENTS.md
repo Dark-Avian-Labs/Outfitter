@@ -51,6 +51,6 @@ One piece can be equipped on one hero. One loadout per hero. Saving an Outfit re
 
 ## Toolchain
 
-Node **26+**, pnpm **11.x**, exact `packageManager`. Encrypted env files need `DOTENV_PRIVATE_KEY_*` or `.env.keys`. `pnpm run validate` is the quality gate.
+Node **26+**, pnpm **11.x**, exact `packageManager`. Encrypted env files need `DOTENV_PRIVATE_KEY_*` or `.env.keys`. `pnpm dev` decrypts `.env.development` with dotenvx (`--strict`) before spawning Vite and the API. `pnpm run validate` is the quality gate.
 
 On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
