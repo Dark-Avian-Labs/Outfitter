@@ -22,7 +22,7 @@ Watcher of Realms equipment manager and optimizer. Store mythic gear, save one l
 ## Requirements
 
 - Node.js 26+
-- pnpm 11+
+- pnpm 12+
 - A populated Codex WoR database for hero names, portraits, and wiki stats
 
 ## Quick start
