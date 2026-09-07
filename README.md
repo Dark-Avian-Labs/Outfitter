@@ -53,7 +53,10 @@ Vite for Outfitter defaults to **5174**.
 
 ## Environment
 
-Secrets in the committed env files are encrypted with dotenvx. `VITE_*` values stay plaintext so `vite build` can read them.
+Secrets in the committed env files are encrypted with dotenvx.
+`pnpm dev` decrypts `.env.development` before starting Vite. Bare `vite` /
+`pnpm run dev:client` / unwrapped `pnpm run build` still read the file as text,
+so encrypting `VITE_*` garbles those.
 
 | Variable                     | Description                                                 |
 | ---------------------------- | ----------------------------------------------------------- |
@@ -77,7 +80,7 @@ Secrets in the committed env files are encrypted with dotenvx. `VITE_*` values s
 | Script                    | Description                                                                                                      |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `pnpm run validate`       | Preflight + format, lint, typecheck, and tests.                                                                  |
-| `pnpm dev`                | Vite + watched API server.                                                                                       |
+| `pnpm dev`                | Vite + watched API server (decrypts `.env.development` first).                                                   |
 | `pnpm run catalog:import` | Copy Codex WoR heroes and images into the Outfitter database. Admins can do the same from the in-app Admin page. |
 | `pnpm run build`          | Typecheck, compile the server, and build the client.                                                             |
 | `pnpm start`              | Run the compiled server (`NODE_ENV=production`).                                                                 |

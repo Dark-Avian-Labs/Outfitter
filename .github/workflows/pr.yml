@@ -20,9 +20,6 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      # Actions are pinned to commit SHAs (tag in comment) so a retargeted or
-      # compromised tag cannot inject code into CI. Dependabot keeps the pins
-      # current.
       - name: Checkout code
         uses: useblacksmith/checkout@f50565632710173b0e366f2cd39b928d31362815 # v1.6.0
 
@@ -41,8 +38,6 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --audit-level high
 
-      # `pnpm run validate` is run-quality-checks.mjs. Do not expand this into
-      # separate format/lint/typecheck/test steps. Build stays its own step.
       - name: Run quality checks
         run: pnpm run validate
 
