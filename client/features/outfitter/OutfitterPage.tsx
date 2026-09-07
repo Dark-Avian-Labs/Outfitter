@@ -54,17 +54,26 @@ type CalcStreamEvent = {
   error?: unknown;
 };
 
-function outfitResultStats(stats: FinalStats): Array<{ label: string; value: string }> {
+function outfitResultStats(
+  stats: FinalStats,
+  hero: HeroRow,
+): Array<{ label: string; value: string }> {
   return [
-    { label: 'HP', value: String(Math.round(stats.hp)) },
-    { label: 'ATK', value: String(Math.round(stats.atk)) },
-    { label: 'DEF', value: String(Math.round(stats.def)) },
-    { label: 'AS', value: String(Math.round(stats.atkSpd)) },
-    { label: 'CC', value: `${stats.critRate.toFixed(1)}%` },
-    { label: 'CD', value: `${stats.critDmg.toFixed(1)}%` },
-    { label: 'HE', value: trimNumber(stats.healingEffect) },
-    { label: 'RR', value: `${trimNumber(stats.rageRegen)}%` },
-    { label: 'RR (Auto)', value: trimNumber(stats.rageRegenAuto) },
+    { label: 'HP', value: `${Math.round(hero.hp)} + ${Math.round(stats.hpGear)}` },
+    { label: 'ATK', value: `${Math.round(hero.atk)} + ${Math.round(stats.atkGear)}` },
+    { label: 'DEF', value: `${Math.round(hero.def)} + ${Math.round(stats.defGear)}` },
+    {
+      label: 'AS',
+      value: `${Math.round(stats.atkSpd - stats.atkSpdGear)} + ${Math.round(stats.atkSpdGear)}`,
+    },
+    { label: 'CC', value: `0 + ${stats.critRate.toFixed(1)}%` },
+    { label: 'CD', value: `0 + ${stats.critDmg.toFixed(1)}%` },
+    { label: 'HE', value: `0 + ${trimNumber(stats.healingEffect)}` },
+    { label: 'RR', value: `0 + ${trimNumber(stats.rageRegen)}%` },
+    {
+      label: 'RR (Auto)',
+      value: `${trimNumber(hero.rr_auto)} + ${trimNumber(stats.rageRegenAuto - hero.rr_auto)}`,
+    },
   ];
 }
 
@@ -855,19 +864,23 @@ export function OutfitterPage() {
                         Save
                       </Button>
                     </div>
-                    <p className="outfit-result-stats">
-                      {outfitResultStats(result.stats).map((entry, entryIndex) => (
-                        <span key={entry.label}>
-                          {entryIndex > 0 ? ' · ' : ''}
-                          {entry.label} {entry.value}
-                        </span>
-                      ))}
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      {result.pieces.map((piece) => {
-                        const full = gear.find((row) => row.id === piece.id);
-                        return full ? <GearTile key={piece.id} gear={full} /> : null;
-                      })}
+                    <div className="outfit-result-body">
+                      {outfitHeroRow ? (
+                        <dl className="outfit-result-stats">
+                          {outfitResultStats(result.stats, outfitHeroRow).map((entry) => (
+                            <div key={entry.label} className="outfit-result-stats__row">
+                              <dt>{entry.label}</dt>
+                              <dd>{entry.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : null}
+                      <div className="outfit-result-gear">
+                        {result.pieces.map((piece) => {
+                          const full = gear.find((row) => row.id === piece.id);
+                          return full ? <GearTile key={piece.id} gear={full} /> : null;
+                        })}
+                      </div>
                     </div>
                   </section>
                 ))}
