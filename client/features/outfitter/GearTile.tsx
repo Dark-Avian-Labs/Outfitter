@@ -125,9 +125,9 @@ export function StatGauge({ stat, value }: { stat: GearStatKey; value: number })
           className="stat-gauge__fill"
           style={{ width: `${ratio * 100}%`, background: gaugeColor(ratio) }}
         />
-        <span className="stat-gauge__notch" style={{ left: '25%' }} aria-hidden />
-        <span className="stat-gauge__notch" style={{ left: '50%' }} aria-hidden />
-        <span className="stat-gauge__notch" style={{ left: '75%' }} aria-hidden />
+        {[20, 40, 60, 80].map((pct) => (
+          <span key={pct} className="stat-gauge__notch" style={{ left: `${pct}%` }} aria-hidden />
+        ))}
       </div>
     </div>
   );

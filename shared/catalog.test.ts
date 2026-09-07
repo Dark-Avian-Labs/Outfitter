@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { gearHasOutOfRangeStats, outOfRangeGearLabels } from './catalog.js';
+import { gaugeColor, gaugeRatio, gearHasOutOfRangeStats, outOfRangeGearLabels } from './catalog.js';
 
 const legal = {
   main_stat: 'atkBonus' as const,
@@ -51,5 +51,19 @@ describe('gearHasOutOfRangeStats', () => {
         sub4_value: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe('substat gauges', () => {
+  it('places 26% DEF just before the 80% gold notch', () => {
+    const ratio = gaugeRatio('defBonus', 26);
+    expect(ratio).toBeGreaterThan(0.6);
+    expect(ratio).toBeLessThan(0.8);
+    expect(gaugeColor(ratio)).toBe('var(--color-rarity-purple)');
+  });
+
+  it('turns gold past the last notch', () => {
+    expect(gaugeRatio('atkBonus', 27)).toBeGreaterThan(0.8);
+    expect(gaugeColor(gaugeRatio('atkBonus', 27))).toBe('var(--color-rarity-gold)');
   });
 });
