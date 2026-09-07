@@ -1,6 +1,10 @@
 import { Router } from 'express';
 
-import { SCORE_STAT_KEYS, optimizeLoadouts, type ScoreStatKey } from '../../shared/optimizer.js';
+import {
+  SCORE_STAT_KEYS,
+  optimizeLoadoutsAsync,
+  type ScoreStatKey,
+} from '../../shared/optimizer.js';
 import type { GearPieceInput } from '../../shared/pieceStats.js';
 import { requireAuthApi } from '../auth/middleware.js';
 import { getAppDb } from '../db/appDb.js';
@@ -44,7 +48,7 @@ function parseRecord(value: unknown): Partial<Record<ScoreStatKey, number>> {
 
 outfitRouter.post(
   '/calculate',
-  asyncHandler((req, res) => {
+  asyncHandler(async (req, res) => {
     const accountId = requireAccountId(req, res);
     if (accountId == null) return;
     const heroSlug = String(req.body?.hero_slug ?? '').trim();
@@ -54,27 +58,55 @@ outfitRouter.post(
       return;
     }
     const includeEquipped = req.body?.include_equipped === true;
-    const results = optimizeLoadouts({
-      hero: {
-        hp: hero.hp,
-        atk: hero.atk,
-        def: hero.def,
-        atkInterval: hero.atk_interval,
-        rrAuto: hero.rr_auto,
-        rrAttack: hero.rr_attack,
-        rrAttacked: hero.rr_attacked,
-      },
-      pieces: q.listGear(getAppDb(), accountId).map(toPieceInput),
-      weights: parseRecord(req.body?.weights),
-      minimums: parseRecord(req.body?.minimums),
-      desiredLeftSet:
-        typeof req.body?.desired_left_set === 'string' ? req.body.desired_left_set : null,
-      desiredRightSet:
-        typeof req.body?.desired_right_set === 'string' ? req.body.desired_right_set : null,
-      forceSets: req.body?.force_sets === true,
-      includeEquippedHeroSlug: includeEquipped ? heroSlug : null,
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    res.write(`${JSON.stringify({ phase: 'prepare' })}\n`);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
     });
-    json(res, { results });
+    try {
+      let lastPct = -1;
+      const results = await optimizeLoadoutsAsync(
+        {
+          hero: {
+            hp: hero.hp,
+            atk: hero.atk,
+            def: hero.def,
+            atkInterval: hero.atk_interval,
+            rrAuto: hero.rr_auto,
+            rrAttack: hero.rr_attack,
+            rrAttacked: hero.rr_attacked,
+          },
+          pieces: q.listGear(getAppDb(), accountId).map(toPieceInput),
+          weights: parseRecord(req.body?.weights),
+          minimums: parseRecord(req.body?.minimums),
+          desiredLeftSet:
+            typeof req.body?.desired_left_set === 'string' ? req.body.desired_left_set : null,
+          desiredRightSet:
+            typeof req.body?.desired_right_set === 'string' ? req.body.desired_right_set : null,
+          forceSets: req.body?.force_sets === true,
+          includeEquippedHeroSlug: includeEquipped ? heroSlug : null,
+        },
+        (done, total) => {
+          if (res.writableEnded) return;
+          const pct = total > 0 ? Math.floor((done / total) * 100) : 100;
+          if (pct === lastPct && done < total) return;
+          lastPct = pct;
+          res.write(`${JSON.stringify({ progress: done, total })}\n`);
+        },
+      );
+      if (!res.writableEnded) {
+        res.write(`${JSON.stringify({ results })}\n`);
+        res.end();
+      }
+    } catch {
+      if (res.writableEnded) return;
+      res.write(`${JSON.stringify({ error: 'Calculate failed' })}\n`);
+      res.end();
+    }
   }),
 );
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { GEAR_SLOTS } from './catalog.js';
-import { optimizeLoadouts, type OptimizerRequest } from './optimizer.js';
+import { optimizeLoadouts, optimizeLoadoutsAsync, type OptimizerRequest } from './optimizer.js';
 import type { GearPieceInput } from './pieceStats.js';
 
 const hero = {
@@ -150,4 +150,51 @@ describe('optimizeLoadouts', () => {
     expect(results[0]?.stats.hp).toBeGreaterThanOrEqual(13000);
     expect(results[0]?.pieces.find((entry) => entry.slot === 'armor')?.id).toBe(hpArmorId);
   }, 20_000);
+
+  it('does not rank extra crit above 100% over ATK when both loadouts already cap', () => {
+    const request: OptimizerRequest = {
+      hero,
+      pieces: [
+        piece(1, 'weapon', 'calamity', { substats: [{ stat: 'atk', value: 500 }] }),
+        piece(2, 'weapon', 'calamity', { substats: [{ stat: 'critRate', value: 25 }] }),
+        piece(3, 'armor', 'calamity'),
+        piece(4, 'bangle', 'the_insight', {
+          mainStat: 'critRate',
+          mainValue: 40,
+          substats: [{ stat: 'critRate', value: 30 }],
+        }),
+        piece(5, 'amulet', 'the_insight', { substats: [{ stat: 'critRate', value: 30 }] }),
+        piece(6, 'ring', 'the_insight', { substats: [{ stat: 'critRate', value: 30 }] }),
+      ],
+      weights: { atk: 100, critRate: 100 },
+      minimums: { critRate: 100 },
+      forceSets: false,
+    };
+    const results = optimizeLoadouts(request);
+    expect(results[0]?.stats.critRate).toBeGreaterThanOrEqual(100);
+    expect(results[0]?.pieces.find((entry) => entry.slot === 'weapon')?.id).toBe(1);
+  });
+
+  it('reports search progress from the async path', async () => {
+    const ticks: Array<[number, number]> = [];
+    const results = await optimizeLoadoutsAsync(
+      {
+        hero,
+        pieces: [
+          piece(1, 'weapon', 'calamity'),
+          piece(2, 'armor', 'calamity'),
+          piece(3, 'bangle', 'fatality'),
+          piece(4, 'amulet', 'fatality'),
+          piece(5, 'ring', 'fatality'),
+        ],
+        weights: { atk: 10 },
+        minimums: {},
+        forceSets: false,
+      },
+      (done, total) => ticks.push([done, total]),
+    );
+    expect(results).toHaveLength(1);
+    expect(ticks[0]).toEqual([0, 1]);
+    expect(ticks.at(-1)).toEqual([1, 1]);
+  });
 });

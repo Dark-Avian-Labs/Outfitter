@@ -2285,3 +2285,74 @@ html.ui-clear .stale-update-banner::after {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+.gear-hover-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.gear-hover-card__icon {
+  flex: none;
+  padding: 2px;
+}
+
+.gear-hover-card__stats {
+  display: flex;
+  min-width: 11rem;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gear-hover-card__main {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gear-hover-card .stat-gauge {
+  min-width: 0;
+}
+
+.outfit-result-stats {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.outfit-calc-progress {
+  height: 8px;
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-foreground) 14%, var(--color-surface-500));
+}
+
+.outfit-calc-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 0.15s linear;
+}
+
+.outfit-calc-progress__fill--busy {
+  width: 32%;
+  animation: outfit-calc-indet 1.2s ease-in-out infinite;
+}
+
+@keyframes outfit-calc-indet {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .outfit-calc-progress__fill--busy {
+    width: 100%;
+    animation: none;
+    opacity: 0.65;
+  }
+}
