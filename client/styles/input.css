@@ -2286,15 +2286,17 @@ html.ui-clear .stale-update-banner::after {
   border-radius: 4px;
 }
 
-.gear-hover-card {
+html .gear-hover-card.glass-surface {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
+  padding: 12px 14px;
+  overflow: visible;
+  border-radius: var(--radius-ui);
 }
 
 .gear-hover-card__icon {
   flex: none;
-  padding: 2px;
 }
 
 .gear-hover-card__stats {
@@ -2313,11 +2315,47 @@ html.ui-clear .stale-update-banner::after {
   min-width: 0;
 }
 
+.outfit-result-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.5rem;
+  align-items: flex-start;
+}
+
 .outfit-result-stats {
-  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  min-width: 13rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.outfit-result-stats__row {
+  display: grid;
+  grid-template-columns: 5.75rem 1fr;
+  gap: 0.5rem;
   font-size: 0.875rem;
-  line-height: 1.45;
+  line-height: 1.4;
+}
+
+.outfit-result-stats dt {
+  margin: 0;
   color: var(--color-muted);
+}
+
+.outfit-result-stats dt::after {
+  content: ':';
+}
+
+.outfit-result-stats dd {
+  margin: 0;
+}
+
+.outfit-result-gear {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .outfit-calc-progress {

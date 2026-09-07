@@ -249,7 +249,7 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
         ? createPortal(
             <div
               ref={tooltipRef}
-              className={`gear-hover-card glass-tooltip-surface fixed z-[9999] p-3${
+              className={`gear-hover-card glass-surface fixed z-[9999]${
                 pinned ? '' : ' pointer-events-none'
               }`}
               role="tooltip"
