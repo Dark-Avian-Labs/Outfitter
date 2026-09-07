@@ -123,7 +123,7 @@ export function StatGauge({ stat, value }: { stat: GearStatKey; value: number })
       <div className="stat-gauge__track">
         <div
           className="stat-gauge__fill"
-          style={{ width: `${Math.round(ratio * 100)}%`, background: gaugeColor(ratio) }}
+          style={{ width: `${ratio * 100}%`, background: gaugeColor(ratio) }}
         />
         <span className="stat-gauge__notch" style={{ left: '25%' }} aria-hidden />
         <span className="stat-gauge__notch" style={{ left: '50%' }} aria-hidden />
