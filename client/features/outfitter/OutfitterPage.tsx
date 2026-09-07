@@ -57,22 +57,24 @@ type CalcStreamEvent = {
 function outfitResultStats(
   stats: FinalStats,
   hero: HeroRow,
-): Array<{ label: string; value: string }> {
+): Array<{ label: string; base: string; bonus: string }> {
   return [
-    { label: 'HP', value: `${Math.round(hero.hp)} + ${Math.round(stats.hpGear)}` },
-    { label: 'ATK', value: `${Math.round(hero.atk)} + ${Math.round(stats.atkGear)}` },
-    { label: 'DEF', value: `${Math.round(hero.def)} + ${Math.round(stats.defGear)}` },
+    { label: 'HP', base: String(Math.round(hero.hp)), bonus: `+${Math.round(stats.hpGear)}` },
+    { label: 'ATK', base: String(Math.round(hero.atk)), bonus: `+${Math.round(stats.atkGear)}` },
+    { label: 'DEF', base: String(Math.round(hero.def)), bonus: `+${Math.round(stats.defGear)}` },
     {
       label: 'AS',
-      value: `${Math.round(stats.atkSpd - stats.atkSpdGear)} + ${Math.round(stats.atkSpdGear)}`,
+      base: String(Math.round(stats.atkSpd - stats.atkSpdGear)),
+      bonus: `+${Math.round(stats.atkSpdGear)}`,
     },
-    { label: 'CC', value: `0 + ${stats.critRate.toFixed(1)}%` },
-    { label: 'CD', value: `0 + ${stats.critDmg.toFixed(1)}%` },
-    { label: 'HE', value: `0 + ${trimNumber(stats.healingEffect)}` },
-    { label: 'RR', value: `0 + ${trimNumber(stats.rageRegen)}%` },
+    { label: 'CC', base: '0', bonus: `+${stats.critRate.toFixed(1)}%` },
+    { label: 'CD', base: '0', bonus: `+${stats.critDmg.toFixed(1)}%` },
+    { label: 'HE', base: '0', bonus: `+${trimNumber(stats.healingEffect)}` },
+    { label: 'RR', base: '0', bonus: `+${trimNumber(stats.rageRegen)}%` },
     {
       label: 'RR (Auto)',
-      value: `${trimNumber(hero.rr_auto)} + ${trimNumber(stats.rageRegenAuto - hero.rr_auto)}`,
+      base: trimNumber(hero.rr_auto),
+      bonus: `+${trimNumber(stats.rageRegenAuto - hero.rr_auto)}`,
     },
   ];
 }
@@ -870,7 +872,10 @@ export function OutfitterPage() {
                           {outfitResultStats(result.stats, outfitHeroRow).map((entry) => (
                             <div key={entry.label} className="outfit-result-stats__row">
                               <dt>{entry.label}</dt>
-                              <dd>{entry.value}</dd>
+                              <dd>
+                                <span className="outfit-result-stats__base">{entry.base}</span>
+                                <span className="outfit-result-stats__bonus">{entry.bonus}</span>
+                              </dd>
                             </div>
                           ))}
                         </dl>
