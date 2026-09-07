@@ -2290,8 +2290,7 @@ html .gear-hover-card.glass-surface {
   flex-direction: column;
   gap: 0.2rem;
   margin: 0;
-  min-width: 13rem;
-  font-variant-numeric: tabular-nums;
+  min-width: 16rem;
 }
 
 .outfit-result-stats__row {
@@ -2312,7 +2311,22 @@ html .gear-hover-card.glass-surface {
 }
 
 .outfit-result-stats dd {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin: 0;
+  font-family: var(--font-mono);
+}
+
+.outfit-result-stats__base {
+  color: var(--color-foreground);
+  text-align: left;
+}
+
+.outfit-result-stats__bonus {
+  margin-left: auto;
+  color: var(--color-success);
+  text-align: right;
 }
 
 .outfit-result-gear {
