@@ -42,3 +42,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.10.7** `chore` [#34](https://github.com/Dark-Avian-Labs/Outfitter/pull/34): fix/gauge notches and add gear main
 - **v1.10.8** `ci(deps)` [#32](https://github.com/Dark-Avian-Labs/Outfitter/pull/32): Bump the github-actions group with 2 updates
 - **v1.10.9** `chore` [#35](https://github.com/Dark-Avian-Labs/Outfitter/pull/35): fix/gauge five band notches
+- **v1.11.0** `chore` [#36](https://github.com/Dark-Avian-Labs/Outfitter/pull/36): feat/outfit calculate progress
