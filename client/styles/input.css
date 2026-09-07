@@ -2179,6 +2179,7 @@ html.ui-clear .stale-update-banner::after {
 .stat-gauge__track {
   --stat-gauge-empty: color-mix(in oklab, var(--color-foreground) 14%, var(--color-surface-500));
   position: relative;
+  isolation: isolate;
   height: 8px;
   margin-top: 3px;
   overflow: hidden;
@@ -2196,9 +2197,10 @@ html.ui-clear .stale-update-banner::after {
   top: 0;
   bottom: 0;
   z-index: 1;
-  width: 10px;
+  width: 6px;
   pointer-events: none;
-  background: var(--stat-gauge-empty);
+  background: #fff;
+  mix-blend-mode: destination-out;
   transform: translateX(-50%);
   clip-path: polygon(0 0, 100% 0, 50% 50%, 100% 100%, 0 100%, 50% 50%);
 }

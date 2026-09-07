@@ -352,14 +352,20 @@ export function GearFormModal({
             />
           </div>
           <div className="grid gap-3">
-            <FieldSelect
-              label="Main stat"
-              value={draft.main_stat}
-              options={mainOptions.map((stat) => ({ value: stat, label: GEAR_STAT_LABELS[stat] }))}
-              onChange={(main_stat) =>
-                setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
-              }
-            />
+            <div className="grid grid-cols-[1.75rem_1fr_6rem] items-end gap-2">
+              <span className="h-10 w-7 shrink-0" aria-hidden />
+              <FieldSelect
+                label="Main stat"
+                value={draft.main_stat}
+                options={mainOptions.map((stat) => ({
+                  value: stat,
+                  label: GEAR_STAT_LABELS[stat],
+                }))}
+                onChange={(main_stat) =>
+                  setDraft({ ...draft, main_stat: main_stat as GearStatKey, main_bonus: 0 })
+                }
+              />
+            </div>
             <div className="grid grid-cols-[1.75rem_1fr_6rem] items-end gap-2">
               <span className="h-10 w-7 shrink-0" aria-hidden />
               <label className="form-group block">

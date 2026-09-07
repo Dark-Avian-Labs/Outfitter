@@ -1,4 +1,4 @@
-import { SLOT_LABELS, type GearStatKey } from '@shared/catalog';
+import { formatStatValue, GEAR_STAT_LABELS, SLOT_LABELS, type GearStatKey } from '@shared/catalog';
 import { type GearRating, RANK_SCORE } from '@shared/gearRating';
 import { BULLION_ICON, REROLL_TOOLS, rerollActionLabel, suggestReroll } from '@shared/gearReroll';
 import { SET_BY_KEY } from '@shared/sets';
@@ -71,6 +71,7 @@ export function RerollTab({
                     <col className="col-icon" />
                     <col className="col-type" />
                     <col className="col-set" />
+                    <col className="col-main" />
                     <col className="col-stats" />
                     <col className="col-rating" />
                     <col className="col-rating" />
@@ -81,6 +82,7 @@ export function RerollTab({
                       <th className="col-icon" />
                       <th className="col-type">Type</th>
                       <th className="col-set">Set</th>
+                      <th className="col-main">Main</th>
                       <th className="stats-col">Stats</th>
                       <th className="col-rating">Now</th>
                       <th className="col-rating">After</th>
@@ -90,6 +92,10 @@ export function RerollTab({
                   <tbody>
                     {rows.map(({ piece, suggestion }) => {
                       const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
+                      const mainLabel = `${GEAR_STAT_LABELS[piece.main_stat]} ${formatStatValue(
+                        piece.main_stat,
+                        piece.main_value + piece.main_bonus,
+                      )}`;
                       const dropsKeep =
                         suggestion.current.ruleName != null &&
                         suggestion.projected.ruleName == null;
@@ -116,6 +122,9 @@ export function RerollTab({
                           <td className="col-type">{SLOT_LABELS[piece.slot]}</td>
                           <td className="col-set" title={setName}>
                             {setName}
+                          </td>
+                          <td className="col-main" title={mainLabel}>
+                            {mainLabel}
                           </td>
                           <td className="stats-col">
                             <div className="flex flex-col gap-1">
