@@ -12,7 +12,9 @@ import {
   gearEmptySlotSrc,
   gearSetBadgeSrc,
   outOfRangeGearLabels,
+  trimNumber,
 } from '@shared/catalog';
+import type { FinalStats } from '@shared/formulas';
 import { GEAR_RANKS, KEEP_RULES, rateGear } from '@shared/gearRating';
 import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
@@ -44,6 +46,73 @@ import {
 } from './worIcons';
 
 type Tab = 'gear' | 'reroll' | 'equipment' | 'outfit';
+
+type CalcStreamEvent = {
+  progress?: unknown;
+  total?: unknown;
+  results?: unknown;
+  error?: unknown;
+};
+
+function outfitResultStats(stats: FinalStats): Array<{ label: string; value: string }> {
+  return [
+    { label: 'HP', value: String(Math.round(stats.hp)) },
+    { label: 'ATK', value: String(Math.round(stats.atk)) },
+    { label: 'DEF', value: String(Math.round(stats.def)) },
+    { label: 'AS', value: String(Math.round(stats.atkSpd)) },
+    { label: 'CC', value: `${stats.critRate.toFixed(1)}%` },
+    { label: 'CD', value: `${stats.critDmg.toFixed(1)}%` },
+    { label: 'HE', value: trimNumber(stats.healingEffect) },
+    { label: 'RR', value: `${trimNumber(stats.rageRegen)}%` },
+    { label: 'RR (Auto)', value: trimNumber(stats.rageRegenAuto) },
+  ];
+}
+
+function isOutfitResultList(value: unknown): value is OutfitResult[] {
+  return Array.isArray(value);
+}
+
+async function readOutfitCalculate(
+  response: Response,
+  onProgress: (done: number, total: number) => void,
+): Promise<{ results: OutfitResult[]; error?: string }> {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('ndjson') || !response.body) {
+    const body = (await response.json().catch(() => null)) as {
+      results?: OutfitResult[];
+      error?: string;
+    } | null;
+    return { results: body?.results ?? [], error: body?.error };
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let results: OutfitResult[] = [];
+  let error: string | undefined;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let event: CalcStreamEvent;
+      try {
+        event = JSON.parse(trimmed) as CalcStreamEvent;
+      } catch {
+        continue;
+      }
+      if (typeof event.progress === 'number' && typeof event.total === 'number') {
+        onProgress(event.progress, event.total);
+      }
+      if (isOutfitResultList(event.results)) results = event.results;
+      if (typeof event.error === 'string') error = event.error;
+    }
+  }
+  return { results, error };
+}
 
 export function OutfitterPage() {
   const [tab, setTab] = useState<Tab>('gear');
@@ -82,6 +151,8 @@ export function OutfitterPage() {
   const [includeEquipped, setIncludeEquipped] = useState(false);
   const [results, setResults] = useState<OutfitResult[]>([]);
   const [calcMessage, setCalcMessage] = useState<string | null>(null);
+  const [calcProgress, setCalcProgress] = useState<number | null>(null);
+  const [calcSearching, setCalcSearching] = useState(false);
   const [heroDraft, setHeroDraft] = useState<HeroRow | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -232,32 +303,47 @@ export function OutfitterPage() {
   }
 
   async function calculate(): Promise<void> {
+    if (!outfitHero || calcProgress != null) return;
     setCalcMessage(null);
     setResults([]);
-    const response = await apiFetch('/api/outfit/calculate', {
-      method: 'POST',
-      body: JSON.stringify({
-        hero_slug: outfitHero,
-        weights,
-        minimums,
-        desired_left_set: desiredLeft || null,
-        desired_right_set: desiredRight || null,
-        force_sets: forceSets,
-        include_equipped: includeEquipped,
-      }),
-    });
-    const body = (await response.json().catch(() => null)) as {
-      results?: OutfitResult[];
-      error?: string;
-    } | null;
-    if (!response.ok) {
-      setCalcMessage(body?.error ?? 'Calculate failed');
-      return;
+    setCalcProgress(0);
+    setCalcSearching(false);
+    try {
+      const response = await apiFetch('/api/outfit/calculate', {
+        method: 'POST',
+        body: JSON.stringify({
+          hero_slug: outfitHero,
+          weights,
+          minimums,
+          desired_left_set: desiredLeft || null,
+          desired_right_set: desiredRight || null,
+          force_sets: forceSets,
+          include_equipped: includeEquipped,
+        }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        setCalcMessage(body?.error ?? 'Calculate failed');
+        return;
+      }
+      const { results: next, error } = await readOutfitCalculate(response, (done, total) => {
+        setCalcSearching(true);
+        setCalcProgress(total > 0 ? done / total : 1);
+      });
+      if (error) {
+        setCalcMessage(error);
+        return;
+      }
+      setResults(next);
+      if (next.length === 0) {
+        setCalcMessage('No loadout matches. Relax mins, turn off Force sets, or add more gear.');
+      }
+    } catch {
+      setCalcMessage('Calculate failed');
+    } finally {
+      setCalcProgress(null);
+      setCalcSearching(false);
     }
-    const next = body?.results ?? [];
-    setResults(next);
-    if (next.length === 0)
-      setCalcMessage('No loadout matches. Relax mins, turn off Force sets, or add more gear.');
   }
 
   async function saveResult(result: OutfitResult): Promise<void> {
@@ -752,7 +838,7 @@ export function OutfitterPage() {
               <Button
                 className="mt-4 w-full"
                 variant="accent"
-                disabled={!outfitHero}
+                disabled={!outfitHero || calcProgress != null}
                 onClick={() => void calculate()}
               >
                 Calculate
@@ -769,10 +855,13 @@ export function OutfitterPage() {
                         Save
                       </Button>
                     </div>
-                    <p className="text-muted mb-3 text-sm">
-                      ATK {Math.round(result.stats.atk)} · Crit {result.stats.critRate.toFixed(1)}%
-                      · CDMG {result.stats.critDmg.toFixed(1)}% · Interval{' '}
-                      {result.stats.attackInterval}
+                    <p className="outfit-result-stats">
+                      {outfitResultStats(result.stats).map((entry, entryIndex) => (
+                        <span key={entry.label}>
+                          {entryIndex > 0 ? ' · ' : ''}
+                          {entry.label} {entry.value}
+                        </span>
+                      ))}
                     </p>
                     <div className="flex flex-wrap gap-3">
                       {result.pieces.map((piece) => {
@@ -841,6 +930,35 @@ export function OutfitterPage() {
             </div>
           </>
         ) : null}
+      </Modal>
+      <Modal
+        open={calcProgress != null}
+        onClose={() => undefined}
+        className="glass-modal-surface max-w-md"
+        ariaLabelledBy="outfit-calc-title"
+      >
+        <h2 id="outfit-calc-title">Calculating</h2>
+        <p className="text-muted mt-2 text-sm">
+          {calcSearching
+            ? `Searching loadouts… ${Math.round((calcProgress ?? 0) * 100)}%`
+            : 'Preparing inventory…'}
+        </p>
+        <div
+          className="outfit-calc-progress"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round((calcProgress ?? 0) * 100)}
+        >
+          {calcSearching ? (
+            <div
+              className="outfit-calc-progress__fill"
+              style={{ width: `${Math.max(Math.round((calcProgress ?? 0) * 100), 4)}%` }}
+            />
+          ) : (
+            <div className="outfit-calc-progress__fill outfit-calc-progress__fill--busy" />
+          )}
+        </div>
       </Modal>
     </div>
   );

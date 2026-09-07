@@ -69,6 +69,10 @@ const MIN_KEEP = 12;
 const SET_KEEP = 4;
 const DESIRED_SET_KEEP = 16;
 const RESULT_COUNT = 3;
+const CRIT_RATE_SCORE_CAP = 100;
+const SEARCH_YIELD_EVERY = 25_000;
+
+export type OptimizerProgress = (done: number, total: number) => void;
 
 function bySlot(pieces: GearPieceInput[]): Record<GearSlot, GearPieceInput[]> {
   const grouped: Record<GearSlot, GearPieceInput[]> = {
@@ -110,7 +114,7 @@ function scoreValue(stat: ScoreStatKey, stats: FinalStats, hero: HeroBaseStats):
     case 'def':
       return stats.def / 50;
     case 'critRate':
-      return stats.critRate;
+      return Math.min(stats.critRate, CRIT_RATE_SCORE_CAP);
     case 'critDmg':
       return stats.critDmg;
     case 'atkSpd': {
@@ -419,40 +423,93 @@ function pruneSlots(
   return next;
 }
 
-function searchGrouped(
-  grouped: Record<GearSlot, GearPieceInput[]>,
-  request: OptimizerRequest,
-): RankedLoadout[] {
-  const best: RankedLoadout[] = [];
-  function consider(candidate: RankedLoadout | null): void {
-    if (!candidate) return;
-    best.push(candidate);
-    best.sort((left, right) => right.score - left.score);
-    if (best.length > RESULT_COUNT) best.length = RESULT_COUNT;
-  }
+function considerCandidate(best: RankedLoadout[], candidate: RankedLoadout | null): void {
+  if (!candidate) return;
+  best.push(candidate);
+  best.sort((left, right) => right.score - left.score);
+  if (best.length > RESULT_COUNT) best.length = RESULT_COUNT;
+}
 
+function* loadoutCombos(grouped: Record<GearSlot, GearPieceInput[]>): Generator<GearPieceInput[]> {
   for (const weapon of grouped.weapon) {
     for (const armor of grouped.armor) {
       for (const bangle of grouped.bangle) {
         for (const amulet of grouped.amulet) {
           for (const ring of grouped.ring) {
-            consider(evaluate([weapon, armor, bangle, amulet, ring], request));
+            yield [weapon, armor, bangle, amulet, ring];
           }
         }
       }
     }
   }
+}
+
+function searchGrouped(
+  grouped: Record<GearSlot, GearPieceInput[]>,
+  request: OptimizerRequest,
+): RankedLoadout[] {
+  const best: RankedLoadout[] = [];
+  for (const pieces of loadoutCombos(grouped)) {
+    considerCandidate(best, evaluate(pieces, request));
+  }
   return best;
 }
 
-export function optimizeLoadouts(request: OptimizerRequest): RankedLoadout[] {
+function yieldEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
+async function searchGroupedAsync(
+  grouped: Record<GearSlot, GearPieceInput[]>,
+  request: OptimizerRequest,
+  onProgress?: OptimizerProgress,
+): Promise<RankedLoadout[]> {
+  const best: RankedLoadout[] = [];
+  const total = comboCount(grouped);
+  let done = 0;
+  const reportEvery = Math.max(1, Math.floor(total / 100));
+  onProgress?.(0, total);
+  for (const pieces of loadoutCombos(grouped)) {
+    considerCandidate(best, evaluate(pieces, request));
+    done += 1;
+    if (done % reportEvery === 0 || done === total) {
+      onProgress?.(done, total);
+    }
+    if (done % SEARCH_YIELD_EVERY === 0) {
+      await yieldEventLoop();
+    }
+  }
+  return best;
+}
+
+function prepareGrouped(request: OptimizerRequest): Record<GearSlot, GearPieceInput[]> | null {
   const inventory = filterInventory(request);
   let grouped = bySlot(inventory);
   for (const slot of GEAR_SLOTS) {
-    if (grouped[slot].length === 0) return [];
+    if (grouped[slot].length === 0) return null;
   }
   if (comboCount(grouped) > FULL_ENUM_LIMIT) {
     grouped = pruneSlots(grouped, request);
   }
+  return grouped;
+}
+
+export function optimizeLoadouts(request: OptimizerRequest): RankedLoadout[] {
+  const grouped = prepareGrouped(request);
+  if (!grouped) return [];
   return searchGrouped(grouped, request);
+}
+
+export async function optimizeLoadoutsAsync(
+  request: OptimizerRequest,
+  onProgress?: OptimizerProgress,
+): Promise<RankedLoadout[]> {
+  const grouped = prepareGrouped(request);
+  if (!grouped) {
+    onProgress?.(1, 1);
+    return [];
+  }
+  return searchGroupedAsync(grouped, request, onProgress);
 }
