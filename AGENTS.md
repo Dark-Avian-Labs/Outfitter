@@ -33,6 +33,8 @@ Clerk login is required for inventory. Same instance as Codex/Armory (`apps.outf
 
 Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login. `APP_PUBLIC_BASE_URL` is required when Clerk is configured; `ALLOWED_APP_ORIGINS` lists sibling apps for Clerk `authorizedParties` and CSRF origin checks. Keep `VITE_*` plaintext. Session token must include `"metadata": "{{user.public_metadata}}"`.
 
+Empty keys are fine outside production: `isClerkConfigured()` skips Clerk and treats every request as signed out (Vitest and Playwright rely on this). Placeholder keys (`pk_test_placeholder` / `sk_test_placeholder`) are fatal at boot — leave both keys empty instead of faking values. Signed-in Playwright is later: decrypt `.env.development` and use a dedicated CI Clerk user (testing tokens). Do not invent local fake keys.
+
 ## Gear and optimizer
 
 Mythic only, four substats. Main stat is a free number plus a 0–max gem bonus (see `MAIN_STAT_BONUS_MAX`). Substat gauges color by percent of max: grey / green / blue / purple / gold / red.
@@ -54,3 +56,13 @@ One piece can be equipped on one hero. One loadout per hero. Saving an Outfit re
 Node **26+**, pnpm **12.x**, exact `packageManager`. Encrypted env files need `DOTENV_PRIVATE_KEY_*` or `.env.keys`. `pnpm dev` decrypts `.env.development` with dotenvx (`--strict`) before spawning Vite and the API. `pnpm run validate` is the quality gate.
 
 On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
+
+## Tests
+
+`pnpm run validate` is the quality gate: preflight, oxfmt, oxlint, typecheck, Vitest. In CI that Vitest step is instrumented (`pnpm run test:coverage`); locally `pnpm test` stays uninstrumented. Use `pnpm run test:watch` while iterating.
+
+HTTP tests that need the real stack (health, CSRF, Helmet, `/api/version`) go through `createApp()` in `server/app.ts`. `server/index.ts` creates the app, optionally copies the Codex catalog if empty, then listens.
+
+Coverage includes `server/`, `client/utils/`, `shared/`, and `scripts/`.
+
+Playwright (`pnpm run test:e2e`) is **not** inside validate. It boots the compiled server (`dist/server/index.js`) on port 3104 with throwaway sqlite files and hits Chromium smokes (probes, CSRF, API 404, SPA when `dist/client` exists). Run `pnpm run build` first, and `pnpm run test:e2e:install` once per machine. The runner and browser downloads are Apache-2.0 / free; no cloud grid.
