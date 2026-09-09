@@ -2,6 +2,10 @@ node_modules/
 dist/
 data/
 coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 *.log
 .env
 .env.keys
