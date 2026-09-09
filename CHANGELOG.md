@@ -48,3 +48,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.12.1** `chore` [#39](https://github.com/Dark-Avian-Labs/Outfitter/pull/39): ci/pnpm 12 setup
 - **v1.12.2** `chore` [#40](https://github.com/Dark-Avian-Labs/Outfitter/pull/40): fix/outfit result stat align
 - **v1.12.3** `ci(deps)` [#41](https://github.com/Dark-Avian-Labs/Outfitter/pull/41): Bump iShark5060/actions-discord-status
+- **v1.12.4** `chore` [#44](https://github.com/Dark-Avian-Labs/Outfitter/pull/44): ci/playwright cache and scheduled audit
