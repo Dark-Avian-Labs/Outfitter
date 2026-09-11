@@ -2095,25 +2095,20 @@ html.ui-clear .stale-update-banner::after {
 .gear-tile__overlay {
   position: absolute;
   z-index: 2;
-  max-width: 45%;
-  font-size: 9px;
-  line-height: 1.1;
-  padding: 1px 3px;
+  box-sizing: border-box;
+  padding: 0;
   border-radius: 3px;
-  background: color-mix(in oklab, var(--color-surface-500) 80%, transparent);
-  color: var(--color-foreground);
+  object-fit: cover;
 }
 
 .gear-tile__overlay--tl {
-  top: -2px;
-  left: -2px;
+  top: 2px;
+  left: 2px;
   z-index: 3;
-  width: 18px;
-  height: 18px;
-  object-fit: cover;
-  padding: 0;
+  width: max(18px, 40%);
+  height: max(18px, 40%);
   border: 1px solid var(--color-rarity-gold);
-  box-sizing: border-box;
+  background: color-mix(in oklab, var(--color-surface-500) 80%, transparent);
 }
 
 .gear-tile__overlay--bl {
@@ -2122,10 +2117,12 @@ html.ui-clear .stale-update-banner::after {
 }
 
 .gear-tile__overlay--br {
-  bottom: 2px;
   right: 2px;
-  max-width: 48%;
-  text-align: right;
+  bottom: 2px;
+  width: 50%;
+  height: 50%;
+  border: 1px solid #000;
+  background: #000;
 }
 
 .stat-gauge {
@@ -2250,6 +2247,8 @@ html.ui-clear .stale-update-banner::after {
 }
 
 html .gear-hover-card.glass-surface {
+  position: fixed;
+  z-index: 200;
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
@@ -2333,6 +2332,87 @@ html .gear-hover-card.glass-surface {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.equipment-hero-card {
+  border-radius: var(--radius-ui);
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.equipment-hero-card:hover {
+  background: var(--color-glass-hover);
+}
+
+.equipment-hero-card__gear {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.equipment-loadout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.85fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+.equipment-loadout__col,
+.equipment-loadout-stats {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+html .equipment-loadout-stats.glass-surface,
+html .gear-piece-card.glass-surface {
+  padding: 10px 12px;
+}
+
+.equipment-loadout-stats .outfit-result-stats {
+  min-width: 0;
+}
+
+.gear-piece-card__head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.gear-piece-card__meta {
+  min-width: 0;
+}
+
+.gear-piece-card__slot {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.gear-piece-card__main {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.gear-piece-card__gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+
+.gear-piece-card .stat-gauge {
+  min-width: 0;
+}
+
+@media (max-width: 48rem) {
+  .equipment-loadout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .outfit-calc-progress {

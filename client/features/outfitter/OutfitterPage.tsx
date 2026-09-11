@@ -8,6 +8,7 @@ import {
   GEAR_STAT_LABELS,
   HERO_CLASSES,
   SLOT_LABELS,
+  type GearSlot,
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
@@ -34,7 +35,7 @@ import { apiFetch } from '../../utils/api';
 import { AccountBar } from './AccountBar';
 import { FieldSelect } from './FieldSelect';
 import { GearFormModal, type GearDraft } from './GearFormModal';
-import { EmptySlotTile, GearTile, StatGauge, type GearView } from './GearTile';
+import { EmptySlotTile, GearTile, StatGauge, gearSubstats, type GearView } from './GearTile';
 import { RerollTab } from './RerollTab';
 import type { GameAccount, HeroRow, OutfitResult } from './types';
 import {
@@ -77,6 +78,53 @@ function outfitResultStats(
       bonus: `+${trimNumber(stats.rageRegenAuto - hero.rr_auto)}`,
     },
   ];
+}
+
+const LOADOUT_LEFT_SLOTS: GearSlot[] = ['weapon', 'armor'];
+const LOADOUT_RIGHT_SLOTS: GearSlot[] = ['bangle', 'amulet', 'ring'];
+
+function OutfitStatsList({ stats, hero }: { stats: FinalStats; hero: HeroRow }) {
+  return (
+    <dl className="outfit-result-stats">
+      {outfitResultStats(stats, hero).map((entry) => (
+        <div key={entry.label} className="outfit-result-stats__row">
+          <dt>{entry.label}</dt>
+          <dd>
+            <span className="outfit-result-stats__base">{entry.base}</span>
+            <span className="outfit-result-stats__bonus">{entry.bonus}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function GearPieceCard({ piece, slot }: { piece: GearView | undefined; slot: GearSlot }) {
+  return (
+    <div className="gear-piece-card glass-surface">
+      <div className="gear-piece-card__head">
+        {piece ? <GearTile gear={piece} size={72} /> : <EmptySlotTile slot={slot} size={72} />}
+        <div className="gear-piece-card__meta">
+          <div className="gear-piece-card__slot">{SLOT_LABELS[slot]}</div>
+          {piece ? (
+            <div className="gear-piece-card__main">
+              {GEAR_STAT_LABELS[piece.main_stat]}{' '}
+              {formatStatValue(piece.main_stat, piece.main_value + piece.main_bonus)}
+            </div>
+          ) : (
+            <div className="text-muted text-xs">Empty</div>
+          )}
+        </div>
+      </div>
+      {piece ? (
+        <div className="gear-piece-card__gauges">
+          {gearSubstats(piece).map((entry, index) => (
+            <StatGauge key={`${piece.id}-${index}`} stat={entry.stat} value={entry.value} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function isOutfitResultList(value: unknown): value is OutfitResult[] {
@@ -147,7 +195,7 @@ export function OutfitterPage() {
   const [selectedHero, setSelectedHero] = useState<HeroRow | null>(null);
   const [heroLoadout, setHeroLoadout] = useState<{
     gear: GearView[];
-    stats: Record<string, number> | null;
+    stats: FinalStats | null;
   } | null>(null);
   const [outfitHero, setOutfitHero] = useState('');
   const [weights, setWeights] = useState<Partial<Record<ScoreStatKey, number>>>({
@@ -251,6 +299,18 @@ export function OutfitterPage() {
     [classFilter, equippedHeroes, factionFilter, rarityFilter],
   );
 
+  const equippedGearByHero = useMemo(() => {
+    const map = new Map<string, Partial<Record<GearSlot, GearView>>>();
+    for (const piece of gear) {
+      const slug = piece.equipped_hero_slug;
+      if (!slug) continue;
+      const slots = map.get(slug) ?? {};
+      slots[piece.slot] = piece;
+      map.set(slug, slots);
+    }
+    return map;
+  }, [gear]);
+
   async function saveGear(draft: GearDraft): Promise<void> {
     setFormError(null);
     const payload = {
@@ -291,7 +351,7 @@ export function OutfitterPage() {
     if (!response.ok) return;
     const body = (await response.json()) as {
       gear?: GearView[];
-      stats?: Record<string, number> | null;
+      stats?: FinalStats | null;
     };
     setHeroLoadout({ gear: body.gear ?? [], stats: body.stats ?? null });
   }
@@ -551,31 +611,13 @@ export function OutfitterPage() {
                         </td>
                         <td className="stats-col">
                           <div className="flex flex-col gap-1">
-                            {[
-                              piece.sub1_stat && piece.sub1_value != null
-                                ? { stat: piece.sub1_stat, value: piece.sub1_value }
-                                : null,
-                              piece.sub2_stat && piece.sub2_value != null
-                                ? { stat: piece.sub2_stat, value: piece.sub2_value }
-                                : null,
-                              piece.sub3_stat && piece.sub3_value != null
-                                ? { stat: piece.sub3_stat, value: piece.sub3_value }
-                                : null,
-                              piece.sub4_stat && piece.sub4_value != null
-                                ? { stat: piece.sub4_stat, value: piece.sub4_value }
-                                : null,
-                            ]
-                              .filter(
-                                (entry): entry is { stat: GearView['main_stat']; value: number } =>
-                                  entry != null,
-                              )
-                              .map((entry, index) => (
-                                <StatGauge
-                                  key={`${piece.id}-${index}`}
-                                  stat={entry.stat}
-                                  value={entry.value}
-                                />
-                              ))}
+                            {gearSubstats(piece).map((entry, index) => (
+                              <StatGauge
+                                key={`${piece.id}-${index}`}
+                                stat={entry.stat}
+                                value={entry.value}
+                              />
+                            ))}
                           </div>
                         </td>
                         <td className="col-rating">
@@ -687,33 +729,57 @@ export function OutfitterPage() {
           </div>
           <div className="table-container">
             <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredEquipmentHeroes.map((hero) => (
-                <button
-                  key={hero.slug}
-                  type="button"
-                  className="rounded-[var(--radius-ui)] p-4 text-left hover:bg-[var(--color-glass-hover)]"
-                  onClick={() => void openHero(hero)}
-                >
-                  <div className="flex items-center gap-3">
-                    {hero.portrait_path ? (
-                      <img
-                        src={hero.portrait_path}
-                        alt=""
-                        className="h-12 w-12 rounded object-cover"
-                      />
-                    ) : null}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
-                        <div className="font-semibold">{hero.name}</div>
-                      </div>
-                      <div className="text-muted text-xs">
-                        {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
+              {filteredEquipmentHeroes.map((hero) => {
+                const loadout = equippedGearByHero.get(hero.slug);
+                return (
+                  <article
+                    key={hero.slug}
+                    className="equipment-hero-card"
+                    tabIndex={0}
+                    onClick={() => void openHero(hero)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return;
+                      event.preventDefault();
+                      void openHero(hero);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {hero.portrait_path ? (
+                        <img
+                          src={hero.portrait_path}
+                          alt=""
+                          className="h-12 w-12 rounded object-cover"
+                        />
+                      ) : null}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
+                          <div className="font-semibold">{hero.name}</div>
+                        </div>
+                        <div className="text-muted text-xs">
+                          {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                    <div className="equipment-hero-card__gear">
+                      {GEAR_SLOTS.map((slot) => {
+                        const piece = loadout?.[slot];
+                        return piece ? (
+                          <GearTile
+                            key={slot}
+                            gear={piece}
+                            size={48}
+                            showEquipped={false}
+                            hover={false}
+                          />
+                        ) : (
+                          <EmptySlotTile key={slot} slot={slot} size={48} />
+                        );
+                      })}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
             {filteredEquipmentHeroes.length === 0 ? (
               <p className="text-muted px-4 pb-4 text-sm">
@@ -868,17 +934,7 @@ export function OutfitterPage() {
                     </div>
                     <div className="outfit-result-body">
                       {outfitHeroRow ? (
-                        <dl className="outfit-result-stats">
-                          {outfitResultStats(result.stats, outfitHeroRow).map((entry) => (
-                            <div key={entry.label} className="outfit-result-stats__row">
-                              <dt>{entry.label}</dt>
-                              <dd>
-                                <span className="outfit-result-stats__base">{entry.base}</span>
-                                <span className="outfit-result-stats__bonus">{entry.bonus}</span>
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
+                        <OutfitStatsList stats={result.stats} hero={outfitHeroRow} />
                       ) : null}
                       <div className="outfit-result-gear">
                         {result.pieces.map((piece) => {
@@ -909,37 +965,37 @@ export function OutfitterPage() {
       <Modal
         open={selectedHero != null}
         onClose={() => setSelectedHero(null)}
-        className="glass-modal-surface max-w-3xl"
+        className="glass-modal-surface max-w-5xl"
       >
         {selectedHero ? (
           <>
             <h2>{selectedHero.name}</h2>
-            {heroLoadout?.stats ? (
-              <p className="text-muted mt-2 text-sm">
-                HP {selectedHero.hp.toFixed(0)} +{Number(heroLoadout.stats.hpGear ?? 0).toFixed(0)}{' '}
-                · ATK {selectedHero.atk.toFixed(0)} +
-                {Number(heroLoadout.stats.atkGear ?? 0).toFixed(0)} · DEF{' '}
-                {selectedHero.def.toFixed(0)} +{Number(heroLoadout.stats.defGear ?? 0).toFixed(0)} ·
-                Crit {Number(heroLoadout.stats.critRate ?? 0).toFixed(1)}% · CDMG{' '}
-                {Number(heroLoadout.stats.critDmg ?? 0).toFixed(1)}% · Interval{' '}
-                {Number(heroLoadout.stats.attackInterval ?? 0)} · HE{' '}
-                {Number(heroLoadout.stats.healingEffect ?? 0)}
-              </p>
-            ) : null}
-            <div className="mt-4 flex flex-wrap gap-3">
-              {GEAR_SLOTS.map((slot) => {
-                const piece = heroLoadout?.gear.find((row) => row.slot === slot);
-                return (
-                  <div key={slot}>
-                    {piece ? (
-                      <GearTile gear={piece} size={88} />
-                    ) : (
-                      <EmptySlotTile slot={slot} size={88} />
-                    )}
-                    <p className="text-muted mt-1 text-xs">{SLOT_LABELS[slot]}</p>
-                  </div>
-                );
-              })}
+            <div className="equipment-loadout">
+              <div className="equipment-loadout__col">
+                {LOADOUT_LEFT_SLOTS.map((slot) => (
+                  <GearPieceCard
+                    key={slot}
+                    slot={slot}
+                    piece={heroLoadout?.gear.find((row) => row.slot === slot)}
+                  />
+                ))}
+              </div>
+              <div className="equipment-loadout-stats glass-surface">
+                {heroLoadout?.stats ? (
+                  <OutfitStatsList stats={heroLoadout.stats} hero={selectedHero} />
+                ) : (
+                  <p className="text-muted text-sm">No stats yet.</p>
+                )}
+              </div>
+              <div className="equipment-loadout__col">
+                {LOADOUT_RIGHT_SLOTS.map((slot) => (
+                  <GearPieceCard
+                    key={slot}
+                    slot={slot}
+                    piece={heroLoadout?.gear.find((row) => row.slot === slot)}
+                  />
+                ))}
+              </div>
             </div>
             <div className="modal-actions">
               <Button variant="cancel" onClick={() => setSelectedHero(null)}>

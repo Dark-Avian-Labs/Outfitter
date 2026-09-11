@@ -56,7 +56,7 @@ function setLabel(setKey: string): string {
   return SET_BY_KEY[setKey]?.name ?? setKey;
 }
 
-function gearSubstats(gear: GearView): Array<{ stat: GearStatKey; value: number }> {
+export function gearSubstats(gear: GearView): Array<{ stat: GearStatKey; value: number }> {
   return [
     gear.sub1_stat && gear.sub1_value != null
       ? { stat: gear.sub1_stat, value: gear.sub1_value }
@@ -100,7 +100,15 @@ export function EmptySlotTile({ slot, size = 72 }: { slot: GearSlot; size?: numb
   );
 }
 
-function GearTileFace({ gear, size }: { gear: GearView; size: number }) {
+function GearTileFace({
+  gear,
+  size,
+  showEquipped,
+}: {
+  gear: GearView;
+  size: number;
+  showEquipped: boolean;
+}) {
   const pieceSrc = gearPieceArtSrc(gear.set_key, gear.slot);
   const emptySrc = gearEmptySlotSrc(gear.slot);
   const [src, setSrc] = useState(pieceSrc);
@@ -128,6 +136,15 @@ function GearTileFace({ gear, size }: { gear: GearView; size: number }) {
       alt={FACTION_DISPLAY_NAMES[gear.exclusive_faction as FactionKey] ?? gear.exclusive_faction}
     />
   ) : null;
+  const equipped =
+    showEquipped && size >= 64 && gear.equipped_hero_portrait ? (
+      <img
+        className="gear-tile__overlay gear-tile__overlay--br"
+        src={gear.equipped_hero_portrait}
+        alt={gear.equipped_hero_name ?? 'Equipped'}
+        title={gear.equipped_hero_name ?? undefined}
+      />
+    ) : null;
 
   return (
     <div className={`gear-tile ${prefixClass}`} style={{ width: size, height: size }}>
@@ -145,9 +162,7 @@ function GearTileFace({ gear, size }: { gear: GearView; size: number }) {
         ) : null}
       </div>
       {overlay}
-      {size >= 64 && gear.equipped_hero_name ? (
-        <span className="gear-tile__overlay gear-tile__overlay--br">{gear.equipped_hero_name}</span>
-      ) : null}
+      {equipped}
     </div>
   );
 }
@@ -249,9 +264,7 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
         ? createPortal(
             <div
               ref={tooltipRef}
-              className={`gear-hover-card glass-surface fixed z-[9999]${
-                pinned ? '' : ' pointer-events-none'
-              }`}
+              className={`gear-hover-card glass-surface${pinned ? '' : ' pointer-events-none'}`}
               role="tooltip"
               style={{
                 left: pos.left,
@@ -265,7 +278,7 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
               }}
             >
               <div className="gear-hover-card__icon">
-                <GearTileFace gear={gear} size={72} />
+                <GearTileFace gear={gear} size={72} showEquipped />
               </div>
               <div className="gear-hover-card__stats">
                 <div className="gear-hover-card__main">{mainLabel}</div>
@@ -281,18 +294,28 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
   );
 }
 
-export function GearTile({ gear, size = 72 }: { gear: GearView; size?: number }) {
+export function GearTile({
+  gear,
+  size = 72,
+  showEquipped = true,
+  hover = true,
+}: {
+  gear: GearView;
+  size?: number;
+  showEquipped?: boolean;
+  hover?: boolean;
+}) {
   const mainLabel = `${GEAR_STAT_LABELS[gear.main_stat]} ${formatStatValue(
     gear.main_stat,
     gear.main_value + gear.main_bonus,
   )}`;
-  return (
-    <GearHoverCard gear={gear}>
-      <div aria-label={`${setLabel(gear.set_key)}. ${mainLabel}`}>
-        <GearTileFace gear={gear} size={size} />
-      </div>
-    </GearHoverCard>
+  const face = (
+    <div aria-label={`${setLabel(gear.set_key)}. ${mainLabel}`}>
+      <GearTileFace gear={gear} size={size} showEquipped={showEquipped} />
+    </div>
   );
+  if (!hover) return face;
+  return <GearHoverCard gear={gear}>{face}</GearHoverCard>;
 }
 
 export function StatGauge({ stat, value }: { stat: GearStatKey; value: number }) {
