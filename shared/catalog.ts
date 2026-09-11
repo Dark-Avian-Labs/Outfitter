@@ -219,6 +219,68 @@ export function isArtifactSecondaryStat(value: string): value is ArtifactSeconda
   return (ARTIFACT_SECONDARY_STATS as readonly string[]).includes(value);
 }
 
+export function isArtifactSecondaryInRange(stat: ArtifactSecondaryStat, value: number): boolean {
+  const range = ARTIFACT_SECONDARY_RANGE[stat];
+  return value >= range.min && value <= range.max;
+}
+
+export const ARTIFACT_HP_BONUS_RANGE = { min: 50, max: 4000 } as const;
+export const ARTIFACT_ATK_BONUS_RANGE = { min: 25, max: 1200 } as const;
+
+type ArtifactBaseRange = { hp: { min: number; max: number }; atk: { min: number; max: number } };
+
+const ARTIFACT_MYTHIC_BASE: ArtifactBaseRange = {
+  hp: { min: 2200, max: 4650 },
+  atk: { min: 777, max: 1497 },
+};
+
+const ARTIFACT_LEGENDARY_BASE: ArtifactBaseRange = {
+  hp: { min: 500, max: 1950 },
+  atk: { min: 150, max: 623 },
+};
+
+export function artifactBaseStatRange(rarity: string, starRating = 0): ArtifactBaseRange {
+  const key = rarity.trim().toLowerCase();
+  if (key === 'mythic' || starRating >= 6) return ARTIFACT_MYTHIC_BASE;
+  if (key === 'legendary' || starRating === 5) return ARTIFACT_LEGENDARY_BASE;
+  return {
+    hp: { min: 1, max: ARTIFACT_MYTHIC_BASE.hp.max },
+    atk: { min: 1, max: ARTIFACT_MYTHIC_BASE.atk.max },
+  };
+}
+
+function artifactBonusInRange(value: number, range: { min: number; max: number }): boolean {
+  if (value === 0) return true;
+  return value >= range.min && value <= range.max;
+}
+
+export type ArtifactRangeFields = {
+  rarity: string;
+  star_rating?: number;
+  hp_base: number;
+  hp_bonus: number;
+  atk_base: number;
+  atk_bonus: number;
+  secondary_stat: ArtifactSecondaryStat | '' | null;
+  secondary_value: number | null;
+};
+
+export function outOfRangeArtifactLabels(piece: ArtifactRangeFields): string[] {
+  const labels: string[] = [];
+  const base = artifactBaseStatRange(piece.rarity, piece.star_rating ?? 0);
+  if (piece.hp_base < base.hp.min || piece.hp_base > base.hp.max) labels.push('HP');
+  if (!artifactBonusInRange(piece.hp_bonus, ARTIFACT_HP_BONUS_RANGE)) labels.push('HP bonus');
+  if (piece.atk_base < base.atk.min || piece.atk_base > base.atk.max) labels.push('ATK');
+  if (!artifactBonusInRange(piece.atk_bonus, ARTIFACT_ATK_BONUS_RANGE)) labels.push('ATK bonus');
+  if (piece.secondary_stat && isArtifactSecondaryStat(piece.secondary_stat)) {
+    const value = piece.secondary_value ?? 0;
+    if (!isArtifactSecondaryInRange(piece.secondary_stat, value)) {
+      labels.push(GEAR_STAT_LABELS[piece.secondary_stat]);
+    }
+  }
+  return labels;
+}
+
 export function promotionFromMaxLevel(maxLevel: number): number {
   if (maxLevel <= 10) return 0;
   if (maxLevel <= 13) return 1;
