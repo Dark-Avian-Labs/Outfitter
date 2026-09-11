@@ -50,3 +50,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.12.3** `ci(deps)` [#41](https://github.com/Dark-Avian-Labs/Outfitter/pull/41): Bump iShark5060/actions-discord-status
 - **v1.12.4** `chore` [#44](https://github.com/Dark-Avian-Labs/Outfitter/pull/44): ci/playwright cache and scheduled audit
 - **v1.12.5** `ci(deps)` [#47](https://github.com/Dark-Avian-Labs/Outfitter/pull/47): Bump the github-actions group with 2 updates
+- **v1.13.0** `chore` [#48](https://github.com/Dark-Avian-Labs/Outfitter/pull/48): feat/equipment loadout display
