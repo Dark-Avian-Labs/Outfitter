@@ -2148,6 +2148,55 @@ html.ui-clear .stale-update-banner::after {
   background: #000;
 }
 
+.artifact-pips {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 10%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.16em;
+  overflow: visible;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.artifact-pip {
+  display: block;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+  flex: none;
+}
+
+.artifact-pip__facet {
+  display: block;
+  width: 0.68em;
+  height: 0.68em;
+  margin: 0.16em;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #d8d8d8 0%, #8a8a8a 36%, #4a4a4a 68%, #2c2c2c 100%);
+  box-shadow:
+    inset 0.09em 0.09em 0.08em rgb(255 255 255 / 55%),
+    inset -0.08em -0.08em 0.1em rgb(0 0 0 / 75%),
+    0 0.05em 0.08em rgb(0 0 0 / 60%);
+}
+
+.artifact-pip.is-filled .artifact-pip__facet {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, currentColor 35%, white) 0%,
+    currentColor 42%,
+    color-mix(in oklab, currentColor 50%, black) 100%
+  );
+  box-shadow:
+    inset 0.08em 0.08em 0.12em color-mix(in oklab, currentColor 20%, white),
+    inset -0.07em -0.08em 0.14em rgb(0 0 0 / 68%),
+    0 0 0.32em color-mix(in oklab, currentColor 50%, transparent),
+    0 0.06em 0.12em rgb(0 0 0 / 50%);
+}
+
 .stat-gauge {
   min-width: 10rem;
 }

@@ -233,6 +233,17 @@ export function maxLevelForPromotion(promotion: number): number {
   return ARTIFACT_PROMOTION_MAX_LEVEL[index] ?? ARTIFACT_LEVEL_MAX;
 }
 
+export function artifactRarityColor(rarity: string, starRating = 0): string {
+  const key = rarity.trim().toLowerCase();
+  if (key === 'mythic' || starRating >= 6) return 'var(--color-rarity-orange)';
+  if (key === 'legendary' || starRating === 5) return 'var(--color-rarity-gold)';
+  if (key === 'epic' || starRating === 4) return 'var(--color-rarity-purple)';
+  if (key === 'rare' || starRating === 3) return 'var(--color-rarity-blue)';
+  if (key === 'uncommon') return 'var(--color-rarity-green)';
+  if (key === 'common') return 'var(--color-rarity-gray)';
+  return 'var(--color-rarity-gold)';
+}
+
 export function formatStatValue(stat: GearStatKey, value: number): string {
   if (PERCENT_STATS.has(stat)) return `${trimNumber(value)}%`;
   return trimNumber(value);
