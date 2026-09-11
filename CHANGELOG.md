@@ -52,3 +52,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.12.5** `ci(deps)` [#47](https://github.com/Dark-Avian-Labs/Outfitter/pull/47): Bump the github-actions group with 2 updates
 - **v1.13.0** `chore` [#48](https://github.com/Dark-Avian-Labs/Outfitter/pull/48): feat/equipment loadout display
 - **v1.14.0** `feat(artifacts)` [#49](https://github.com/Dark-Avian-Labs/Outfitter/pull/49): add inventory tab and equipment assignment
+- **v1.15.0** `feat(artifacts)` [#50](https://github.com/Dark-Avian-Labs/Outfitter/pull/50): parse bonus-less OCR and show promotion pips
