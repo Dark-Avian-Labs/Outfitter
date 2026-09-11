@@ -149,11 +149,13 @@ export function ArtifactFormModal({
             className="sm:col-span-2"
             label="Artifact"
             value={draft.catalog_slug}
-            options={catalog.map((row) => ({
-              value: row.slug,
-              label: row.name,
-              iconSrc: row.portrait_path ?? undefined,
-            }))}
+            options={[...catalog]
+              .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+              .map((row) => ({
+                value: row.slug,
+                label: row.name,
+                iconSrc: row.portrait_path ?? undefined,
+              }))}
             onChange={(catalog_slug) => setDraft({ ...draft, catalog_slug })}
           />
           <label className="form-group block">
