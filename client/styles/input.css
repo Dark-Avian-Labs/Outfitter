@@ -2065,7 +2065,8 @@ html.ui-clear .stale-update-banner::after {
   border-radius: inherit;
 }
 
-.gear-tile--ancient {
+.gear-tile--ancient,
+.gear-tile--artifact {
   border: 1px solid var(--color-danger);
 }
 
@@ -2156,7 +2157,7 @@ html.ui-clear .stale-update-banner::after {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 0.16em;
+  gap: calc(0.16em + 1px);
   overflow: visible;
   transform: translateX(-50%);
   pointer-events: none;
@@ -2172,9 +2173,9 @@ html.ui-clear .stale-update-banner::after {
 
 .artifact-pip__facet {
   display: block;
-  width: 0.68em;
-  height: 0.68em;
-  margin: 0.16em;
+  width: 0.82em;
+  height: 0.82em;
+  margin: 0.09em;
   transform: rotate(45deg);
   background: linear-gradient(135deg, #d8d8d8 0%, #8a8a8a 36%, #4a4a4a 68%, #2c2c2c 100%);
   box-shadow:

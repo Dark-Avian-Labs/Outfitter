@@ -174,10 +174,14 @@ function ArtifactPortrait({
   starRating?: number;
 }) {
   const filled = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
-  const pip = Math.max(5, Math.round(size * 0.12));
+  const pip = Math.max(6, Math.min(Math.round(size * 0.18), Math.floor((size - 8) / 5.5)));
   const color = artifactRarityColor(rarity, starRating);
   return (
-    <div className="gear-tile" style={{ width: size, height: size }} title={title}>
+    <div
+      className="gear-tile gear-tile--artifact"
+      style={{ width: size, height: size }}
+      title={title}
+    >
       <div className="gear-tile__clip">
         {src ? <img className="gear-tile__art" src={src} alt="" /> : null}
       </div>
@@ -374,6 +378,16 @@ export function OutfitterPage() {
         .slice()
         .sort(compareInventoryGear),
     [gear, mainFilter, ratingFilter, ruleFilter, setFilter, slotFilter, subFilter],
+  );
+
+  const artifactsByName = useMemo(
+    () =>
+      artifacts
+        .slice()
+        .sort(
+          (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id - b.id,
+        ),
+    [artifacts],
   );
 
   const equippedHeroes = useMemo(() => {
@@ -867,7 +881,7 @@ export function OutfitterPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {artifacts.map((row) => (
+                  {artifactsByName.map((row) => (
                     <tr
                       key={row.id}
                       className="cursor-pointer"
@@ -1321,7 +1335,7 @@ export function OutfitterPage() {
                         value={selectedArtifactId}
                         options={[
                           { value: '', label: 'None' },
-                          ...artifacts.map((row) => ({
+                          ...artifactsByName.map((row) => ({
                             value: String(row.id),
                             label:
                               row.equipped_hero_slug && row.equipped_hero_slug !== selectedHero.slug
