@@ -69,12 +69,18 @@ function parseStatNumber(raw: string): number | null {
 }
 
 function parseBaseAndBonus(source: string): { base: number; bonus: number } | null {
-  const match = source.match(/(\d{1,3}(?:,\d{3})+|\d{2,5})\s*\+\s*(\d{1,3}(?:,\d{3})+|\d{1,5})/);
-  if (!match?.[1] || !match[2]) return null;
-  const base = parseStatNumber(match[1]);
-  const bonus = parseStatNumber(match[2]);
-  if (base == null || bonus == null) return null;
-  return { base, bonus };
+  const cleaned = source.replace(/\d{1,2}\s*\/\s*\d{1,2}/g, ' ');
+  const plus = cleaned.match(/(\d{1,3}(?:,\d{3})+|\d{2,5})\s*\+\s*(\d{1,3}(?:,\d{3})+|\d{1,5})/);
+  if (plus?.[1] && plus[2]) {
+    const base = parseStatNumber(plus[1]);
+    const bonus = parseStatNumber(plus[2]);
+    if (base != null && bonus != null) return { base, bonus };
+  }
+  const single = cleaned.match(/(\d{1,3}(?:,\d{3})+|\d{2,5})/);
+  if (!single?.[1]) return null;
+  const base = parseStatNumber(single[1]);
+  if (base == null) return null;
+  return { base, bonus: 0 };
 }
 
 function hasPhrase(haystack: string, phrase: string): boolean {

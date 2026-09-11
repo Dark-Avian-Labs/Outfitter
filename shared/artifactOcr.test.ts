@@ -66,6 +66,28 @@ describe('parseArtifactOcr', () => {
     expect(parsed.atk_base).toBe(1497);
     expect(parsed.secondary_stat).toBe('atkSpd');
   });
+
+  it('reads HP and ATK when there is no bonus roll', () => {
+    const text = `
+Mythic Artifact
+Amenhotep's Bow
+Bayek Exclusive
++ 16/16
+HP 3700
+ATK 1227
+`;
+    expect(parseArtifactOcr(text, [{ slug: 'amenhoteps-bow', name: "Amenhotep's Bow" }])).toEqual({
+      catalog_slug: 'amenhoteps-bow',
+      level: 16,
+      promotion: 2,
+      hp_base: 3700,
+      hp_bonus: 0,
+      atk_base: 1227,
+      atk_bonus: 0,
+      secondary_stat: null,
+      secondary_value: null,
+    });
+  });
 });
 
 describe('applyArtifactOcr', () => {

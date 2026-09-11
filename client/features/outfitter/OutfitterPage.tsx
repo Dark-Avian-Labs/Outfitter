@@ -1,4 +1,5 @@
 import {
+  ARTIFACT_PROMOTION_MAX,
   CLASS_DISPLAY_NAMES,
   FACTION_DISPLAY_NAMES,
   FACTIONS,
@@ -8,6 +9,7 @@ import {
   GEAR_STAT_LABELS,
   HERO_CLASSES,
   SLOT_LABELS,
+  artifactRarityColor,
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
@@ -154,19 +156,41 @@ function heroBase(hero: HeroRow) {
   };
 }
 
+const ARTIFACT_PIP_DIP = [0, 0.18, 0.38, 0.18, 0] as const;
+
 function ArtifactPortrait({
   src,
   size,
   title,
+  promotion = 0,
+  rarity = '',
+  starRating = 0,
 }: {
   src: string | null;
   size: number;
   title?: string;
+  promotion?: number;
+  rarity?: string;
+  starRating?: number;
 }) {
+  const filled = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
+  const pip = Math.max(5, Math.round(size * 0.12));
+  const color = artifactRarityColor(rarity, starRating);
   return (
     <div className="gear-tile" style={{ width: size, height: size }} title={title}>
       <div className="gear-tile__clip">
         {src ? <img className="gear-tile__art" src={src} alt="" /> : null}
+      </div>
+      <div className="artifact-pips" style={{ fontSize: pip, color }} aria-hidden>
+        {ARTIFACT_PIP_DIP.map((dip, index) => (
+          <span
+            key={index}
+            className={`artifact-pip${index < filled ? ' is-filled' : ''}`}
+            style={{ transform: `translateY(${dip * pip}px)` }}
+          >
+            <span className="artifact-pip__facet" />
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -394,17 +418,18 @@ export function OutfitterPage() {
     return map;
   }, [artifacts]);
 
+  const selectedEquipmentArtifact = useMemo(() => {
+    if (selectedArtifactId === '') return null;
+    return artifacts.find((row) => String(row.id) === selectedArtifactId) ?? null;
+  }, [artifacts, selectedArtifactId]);
+
   const previewLoadoutStats = useMemo(() => {
     if (!selectedHero || !heroLoadout) return null;
-    const selected =
-      selectedArtifactId === ''
-        ? null
-        : (artifacts.find((row) => String(row.id) === selectedArtifactId) ?? null);
     return computeFinalStats(
       heroBase(selectedHero),
-      loadoutStatBag(heroLoadout.gear.map(gearToPieceInput), selected),
+      loadoutStatBag(heroLoadout.gear.map(gearToPieceInput), selectedEquipmentArtifact),
     );
-  }, [artifacts, heroLoadout, selectedArtifactId, selectedHero]);
+  }, [heroLoadout, selectedEquipmentArtifact, selectedHero]);
 
   async function saveGear(draft: GearDraft): Promise<void> {
     setFormError(null);
@@ -853,7 +878,14 @@ export function OutfitterPage() {
                       }}
                     >
                       <td className="col-icon">
-                        <ArtifactPortrait src={row.portrait_path} size={40} title={row.name} />
+                        <ArtifactPortrait
+                          src={row.portrait_path}
+                          size={40}
+                          title={row.name}
+                          promotion={row.promotion}
+                          rarity={row.rarity}
+                          starRating={row.star_rating}
+                        />
                       </td>
                       <td className="col-name" title={row.name}>
                         {row.name}
@@ -1041,6 +1073,9 @@ export function OutfitterPage() {
                           src={artifact.portrait_path}
                           size={48}
                           title={artifact.name}
+                          promotion={artifact.promotion}
+                          rarity={artifact.rarity}
+                          starRating={artifact.star_rating}
                         />
                       ) : (
                         <div
@@ -1264,13 +1299,13 @@ export function OutfitterPage() {
                 ))}
                 <div className="gear-piece-card glass-surface">
                   <div className="gear-piece-card__head">
-                    {selectedArtifactId ? (
+                    {selectedEquipmentArtifact ? (
                       <ArtifactPortrait
-                        src={
-                          artifacts.find((row) => String(row.id) === selectedArtifactId)
-                            ?.portrait_path ?? null
-                        }
+                        src={selectedEquipmentArtifact.portrait_path}
                         size={72}
+                        promotion={selectedEquipmentArtifact.promotion}
+                        rarity={selectedEquipmentArtifact.rarity}
+                        starRating={selectedEquipmentArtifact.star_rating}
                       />
                     ) : (
                       <div

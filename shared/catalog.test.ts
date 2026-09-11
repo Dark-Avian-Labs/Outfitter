@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  artifactRarityColor,
   gaugeColor,
   gaugeRatio,
   gearHasOutOfRangeStats,
@@ -81,6 +82,13 @@ describe('artifact promotion', () => {
     expect(maxLevelForPromotion(0)).toBe(10);
     expect(maxLevelForPromotion(5)).toBe(25);
     expect(maxLevelForPromotion(99)).toBe(25);
+  });
+
+  it('maps catalog rarity to a pip color and falls back to gold', () => {
+    expect(artifactRarityColor('mythic')).toBe('var(--color-rarity-orange)');
+    expect(artifactRarityColor('legendary')).toBe('var(--color-rarity-gold)');
+    expect(artifactRarityColor('', 6)).toBe('var(--color-rarity-orange)');
+    expect(artifactRarityColor('')).toBe('var(--color-rarity-gold)');
   });
 });
 
