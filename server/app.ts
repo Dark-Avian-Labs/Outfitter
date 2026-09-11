@@ -59,6 +59,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   app.use(requestIdMiddleware);
 
   app.use('/api/gear/ocr', express.json({ limit: '5mb' }));
+  app.use('/api/artifacts/ocr', express.json({ limit: '5mb' }));
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));
   app.use(cookieParser());

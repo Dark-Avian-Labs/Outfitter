@@ -1,7 +1,11 @@
 import { Router } from 'express';
 
 import { computeFinalStats } from '../../shared/formulas.js';
-import { loadoutStatBag, type GearPieceInput } from '../../shared/pieceStats.js';
+import {
+  loadoutStatBag,
+  type ArtifactStatInput,
+  type GearPieceInput,
+} from '../../shared/pieceStats.js';
 import { requireAuthApi } from '../auth/middleware.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
@@ -85,12 +89,22 @@ heroesRouter.get(
       sendError(res, 'Hero not found.', 404);
       return;
     }
-    const gear = q
-      .listGear(getAppDb(), accountId)
-      .filter((piece) => piece.equipped_hero_slug === slug);
+    const db = getAppDb();
+    const gear = q.listGear(db, accountId).filter((piece) => piece.equipped_hero_slug === slug);
+    const artifact = q.getEquippedArtifact(db, accountId, slug) ?? null;
     const pieces = gear.map(toPieceInput);
+    const artifactInput: ArtifactStatInput | null = artifact
+      ? {
+          hp_base: artifact.hp_base,
+          hp_bonus: artifact.hp_bonus,
+          atk_base: artifact.atk_base,
+          atk_bonus: artifact.atk_bonus,
+          secondary_stat: artifact.secondary_stat,
+          secondary_value: artifact.secondary_value,
+        }
+      : null;
     const stats =
-      pieces.length > 0
+      pieces.length > 0 || artifactInput
         ? computeFinalStats(
             {
               hp: hero.hp,
@@ -101,9 +115,36 @@ heroesRouter.get(
               rrAttack: hero.rr_attack,
               rrAttacked: hero.rr_attacked,
             },
-            loadoutStatBag(pieces),
+            loadoutStatBag(pieces, artifactInput),
           )
         : null;
-    json(res, { hero, gear, stats });
+    json(res, { hero, gear, artifact, stats });
+  }),
+);
+
+heroesRouter.patch(
+  '/:slug/artifact',
+  asyncHandler((req, res) => {
+    const accountId = requireAccountId(req, res);
+    if (accountId == null) return;
+    const slug = String(req.params.slug ?? '').trim();
+    const db = getAppDb();
+    const hero = q.getHero(db, accountId, slug);
+    if (!hero) {
+      sendError(res, 'Hero not found.', 404);
+      return;
+    }
+    const raw = req.body?.artifact_id;
+    const artifactId = raw == null || raw === '' ? null : Number(raw);
+    if (artifactId != null && (!Number.isInteger(artifactId) || artifactId <= 0)) {
+      sendError(res, 'Invalid artifact id.');
+      return;
+    }
+    if (artifactId != null && !q.getArtifact(db, accountId, artifactId)) {
+      sendError(res, 'Artifact not found.', 404);
+      return;
+    }
+    q.equipArtifact(db, accountId, slug, artifactId);
+    json(res, { artifact: artifactId != null ? q.getArtifact(db, accountId, artifactId) : null });
   }),
 );

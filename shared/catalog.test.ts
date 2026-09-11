@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { gaugeColor, gaugeRatio, gearHasOutOfRangeStats, outOfRangeGearLabels } from './catalog.js';
+import {
+  gaugeColor,
+  gaugeRatio,
+  gearHasOutOfRangeStats,
+  maxLevelForPromotion,
+  outOfRangeGearLabels,
+  promotionFromMaxLevel,
+} from './catalog.js';
 
 const legal = {
   main_stat: 'atkBonus' as const,
@@ -51,6 +58,29 @@ describe('gearHasOutOfRangeStats', () => {
         sub4_value: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe('artifact promotion', () => {
+  it('maps max level bands to promotion 0-5', () => {
+    expect(promotionFromMaxLevel(1)).toBe(0);
+    expect(promotionFromMaxLevel(10)).toBe(0);
+    expect(promotionFromMaxLevel(11)).toBe(1);
+    expect(promotionFromMaxLevel(13)).toBe(1);
+    expect(promotionFromMaxLevel(14)).toBe(2);
+    expect(promotionFromMaxLevel(16)).toBe(2);
+    expect(promotionFromMaxLevel(17)).toBe(3);
+    expect(promotionFromMaxLevel(19)).toBe(3);
+    expect(promotionFromMaxLevel(20)).toBe(4);
+    expect(promotionFromMaxLevel(22)).toBe(4);
+    expect(promotionFromMaxLevel(23)).toBe(5);
+    expect(promotionFromMaxLevel(25)).toBe(5);
+  });
+
+  it('returns the max level for each promotion', () => {
+    expect(maxLevelForPromotion(0)).toBe(10);
+    expect(maxLevelForPromotion(5)).toBe(25);
+    expect(maxLevelForPromotion(99)).toBe(25);
   });
 });
 

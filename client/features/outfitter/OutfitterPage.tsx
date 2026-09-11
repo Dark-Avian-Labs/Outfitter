@@ -8,17 +8,18 @@ import {
   GEAR_STAT_LABELS,
   HERO_CLASSES,
   SLOT_LABELS,
-  type GearSlot,
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
   outOfRangeGearLabels,
   trimNumber,
+  type GearSlot,
 } from '@shared/catalog';
-import type { FinalStats } from '@shared/formulas';
+import { computeFinalStats, type FinalStats } from '@shared/formulas';
 import { GEAR_RANKS, KEEP_RULES, rateGear } from '@shared/gearRating';
 import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
+import { loadoutStatBag, type GearPieceInput } from '@shared/pieceStats';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -33,11 +34,12 @@ import {
 } from '../../lib/triFilter';
 import { apiFetch } from '../../utils/api';
 import { AccountBar } from './AccountBar';
+import { ArtifactFormModal, type ArtifactDraft } from './ArtifactFormModal';
 import { FieldSelect } from './FieldSelect';
 import { GearFormModal, type GearDraft } from './GearFormModal';
 import { EmptySlotTile, GearTile, StatGauge, gearSubstats, type GearView } from './GearTile';
 import { RerollTab } from './RerollTab';
-import type { GameAccount, HeroRow, OutfitResult } from './types';
+import type { ArtifactView, CatalogArtifact, GameAccount, HeroRow, OutfitResult } from './types';
 import {
   STAR_ICONS,
   WorIconWithFallback,
@@ -46,7 +48,7 @@ import {
   renderStars,
 } from './worIcons';
 
-type Tab = 'gear' | 'reroll' | 'equipment' | 'outfit';
+type Tab = 'gear' | 'artifacts' | 'reroll' | 'equipment' | 'outfit';
 
 type CalcStreamEvent = {
   progress?: unknown;
@@ -127,6 +129,62 @@ function GearPieceCard({ piece, slot }: { piece: GearView | undefined; slot: Gea
   );
 }
 
+function gearToPieceInput(row: GearView): GearPieceInput {
+  return {
+    id: row.id,
+    slot: row.slot,
+    setKey: row.set_key,
+    mainStat: row.main_stat,
+    mainValue: row.main_value,
+    mainBonus: row.main_bonus,
+    substats: gearSubstats(row),
+    equippedHeroSlug: row.equipped_hero_slug,
+  };
+}
+
+function heroBase(hero: HeroRow) {
+  return {
+    hp: hero.hp,
+    atk: hero.atk,
+    def: hero.def,
+    atkInterval: hero.atk_interval,
+    rrAuto: hero.rr_auto,
+    rrAttack: hero.rr_attack,
+    rrAttacked: hero.rr_attacked,
+  };
+}
+
+function ArtifactPortrait({
+  src,
+  size,
+  title,
+}: {
+  src: string | null;
+  size: number;
+  title?: string;
+}) {
+  return (
+    <div className="gear-tile" style={{ width: size, height: size }} title={title}>
+      <div className="gear-tile__clip">
+        {src ? <img className="gear-tile__art" src={src} alt="" /> : null}
+      </div>
+    </div>
+  );
+}
+
+function artifactStatLines(row: ArtifactView): string[] {
+  const lines = [
+    `HP ${row.hp_base}${row.hp_bonus > 0 ? `+${row.hp_bonus}` : ''}`,
+    `ATK ${row.atk_base}${row.atk_bonus > 0 ? `+${row.atk_bonus}` : ''}`,
+  ];
+  if (row.secondary_stat && row.secondary_value != null) {
+    lines.push(
+      `${GEAR_STAT_LABELS[row.secondary_stat]} ${formatStatValue(row.secondary_stat, row.secondary_value)}`,
+    );
+  }
+  return lines;
+}
+
 function isOutfitResultList(value: unknown): value is OutfitResult[] {
   return Array.isArray(value);
 }
@@ -179,9 +237,13 @@ export function OutfitterPage() {
   const [currentAccountId, setCurrentAccountId] = useState<number | null>(null);
   const [heroes, setHeroes] = useState<HeroRow[]>([]);
   const [gear, setGear] = useState<GearView[]>([]);
+  const [artifacts, setArtifacts] = useState<ArtifactView[]>([]);
+  const [artifactCatalog, setArtifactCatalog] = useState<CatalogArtifact[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [gearFormOpen, setGearFormOpen] = useState(false);
   const [editingGear, setEditingGear] = useState<GearView | null>(null);
+  const [artifactFormOpen, setArtifactFormOpen] = useState(false);
+  const [editingArtifact, setEditingArtifact] = useState<ArtifactView | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [slotFilter, setSlotFilter] = useState<TriFilterMap>({});
   const [setFilter, setSetFilter] = useState('');
@@ -195,8 +257,10 @@ export function OutfitterPage() {
   const [selectedHero, setSelectedHero] = useState<HeroRow | null>(null);
   const [heroLoadout, setHeroLoadout] = useState<{
     gear: GearView[];
+    artifact: ArtifactView | null;
     stats: FinalStats | null;
   } | null>(null);
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>('');
   const [outfitHero, setOutfitHero] = useState('');
   const [weights, setWeights] = useState<Partial<Record<ScoreStatKey, number>>>({
     atk: 100,
@@ -233,18 +297,28 @@ export function OutfitterPage() {
       if (accountId == null) {
         setHeroes([]);
         setGear([]);
+        setArtifacts([]);
+        setArtifactCatalog([]);
         return;
       }
-      const [heroesRes, gearRes] = await Promise.all([
+      const [heroesRes, gearRes, artifactsRes] = await Promise.all([
         apiFetch('/api/heroes'),
         apiFetch('/api/gear'),
+        apiFetch('/api/artifacts'),
       ]);
       if (!heroesRes.ok) throw new Error('Failed to load heroes. Import the Codex catalog first.');
       if (!gearRes.ok) throw new Error('Failed to load gear');
+      if (!artifactsRes.ok) throw new Error('Failed to load artifacts');
       const heroesBody = (await heroesRes.json()) as { heroes?: HeroRow[] };
       const gearBody = (await gearRes.json()) as { gear?: GearView[] };
+      const artifactsBody = (await artifactsRes.json()) as {
+        artifacts?: ArtifactView[];
+        catalog?: CatalogArtifact[];
+      };
       setHeroes(heroesBody.heroes ?? []);
       setGear(gearBody.gear ?? []);
+      setArtifacts(artifactsBody.artifacts ?? []);
+      setArtifactCatalog(artifactsBody.catalog ?? []);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Failed to load');
     }
@@ -311,6 +385,27 @@ export function OutfitterPage() {
     return map;
   }, [gear]);
 
+  const equippedArtifactByHero = useMemo(() => {
+    const map = new Map<string, ArtifactView>();
+    for (const row of artifacts) {
+      if (!row.equipped_hero_slug) continue;
+      map.set(row.equipped_hero_slug, row);
+    }
+    return map;
+  }, [artifacts]);
+
+  const previewLoadoutStats = useMemo(() => {
+    if (!selectedHero || !heroLoadout) return null;
+    const selected =
+      selectedArtifactId === ''
+        ? null
+        : (artifacts.find((row) => String(row.id) === selectedArtifactId) ?? null);
+    return computeFinalStats(
+      heroBase(selectedHero),
+      loadoutStatBag(heroLoadout.gear.map(gearToPieceInput), selected),
+    );
+  }, [artifacts, heroLoadout, selectedArtifactId, selectedHero]);
+
   async function saveGear(draft: GearDraft): Promise<void> {
     setFormError(null);
     const payload = {
@@ -344,16 +439,74 @@ export function OutfitterPage() {
     await reload();
   }
 
+  async function saveArtifact(draft: ArtifactDraft): Promise<void> {
+    setFormError(null);
+    const payload = {
+      ...draft,
+      secondary_stat: draft.secondary_stat || null,
+      secondary_value: draft.secondary_stat ? draft.secondary_value : null,
+    };
+    const response = await apiFetch(
+      editingArtifact ? `/api/artifacts/${editingArtifact.id}` : '/api/artifacts',
+      {
+        method: editingArtifact ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+      setFormError(body?.error ?? 'Could not save artifact');
+      return;
+    }
+    setArtifactFormOpen(false);
+    setEditingArtifact(null);
+    await reload();
+  }
+
+  async function deleteArtifact(): Promise<void> {
+    if (!editingArtifact) return;
+    const response = await apiFetch(`/api/artifacts/${editingArtifact.id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      setFormError('Could not delete artifact');
+      return;
+    }
+    setArtifactFormOpen(false);
+    setEditingArtifact(null);
+    await reload();
+  }
+
   async function openHero(hero: HeroRow): Promise<void> {
     setSelectedHero(hero);
     setHeroLoadout(null);
+    setSelectedArtifactId('');
+    setFormError(null);
     const response = await apiFetch(`/api/heroes/${hero.slug}/loadout`);
     if (!response.ok) return;
     const body = (await response.json()) as {
       gear?: GearView[];
+      artifact?: ArtifactView | null;
       stats?: FinalStats | null;
     };
-    setHeroLoadout({ gear: body.gear ?? [], stats: body.stats ?? null });
+    const artifact = body.artifact ?? null;
+    setHeroLoadout({ gear: body.gear ?? [], artifact, stats: body.stats ?? null });
+    setSelectedArtifactId(artifact ? String(artifact.id) : '');
+  }
+
+  async function saveHeroArtifact(): Promise<void> {
+    if (!selectedHero) return;
+    const response = await apiFetch(`/api/heroes/${selectedHero.slug}/artifact`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        artifact_id: selectedArtifactId === '' ? null : Number(selectedArtifactId),
+      }),
+    });
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+      setFormError(body?.error ?? 'Could not save artifact');
+      return;
+    }
+    setSelectedHero(null);
+    await reload();
   }
 
   async function saveHeroStats(): Promise<void> {
@@ -443,7 +596,7 @@ export function OutfitterPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {(['gear', 'reroll', 'equipment', 'outfit'] as const).map((item) => (
+          {(['gear', 'artifacts', 'reroll', 'equipment', 'outfit'] as const).map((item) => (
             <button
               key={item}
               type="button"
@@ -652,6 +805,112 @@ export function OutfitterPage() {
         </>
       ) : null}
 
+      {tab === 'artifacts' ? (
+        <>
+          <div className="filter-bar">
+            <div className="stats-bar-actions ml-auto">
+              <button
+                type="button"
+                className="stats-bar-toggle"
+                onClick={() => {
+                  setEditingArtifact(null);
+                  setFormError(null);
+                  setArtifactFormOpen(true);
+                }}
+              >
+                + Add
+              </button>
+            </div>
+          </div>
+          <div className="table-container">
+            <div className="table-scroll">
+              <table className="gear-table artifact-table">
+                <colgroup>
+                  <col className="col-icon" />
+                  <col className="col-name" />
+                  <col className="col-limit" />
+                  <col className="col-stats" />
+                  <col className="col-equipped" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="col-icon" />
+                    <th className="col-name">Name</th>
+                    <th className="col-limit">Limit</th>
+                    <th className="stats-col">Stats</th>
+                    <th className="col-equipped">Equipped</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {artifacts.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setEditingArtifact(row);
+                        setFormError(null);
+                        setArtifactFormOpen(true);
+                      }}
+                    >
+                      <td className="col-icon">
+                        <ArtifactPortrait src={row.portrait_path} size={40} title={row.name} />
+                      </td>
+                      <td className="col-name" title={row.name}>
+                        {row.name}
+                      </td>
+                      <td className="col-limit">
+                        {row.exclusive_hero_portrait ? (
+                          <img
+                            className="gear-table__hero"
+                            src={row.exclusive_hero_portrait}
+                            alt=""
+                            title={row.exclusive_hero_name ?? undefined}
+                          />
+                        ) : row.class ? (
+                          <WorIconWithFallback
+                            className="invert-on-light mx-auto"
+                            primarySrc={classIconUrls(row.class).primary}
+                            fallbackSrc={classIconUrls(row.class).fallback}
+                            alt={CLASS_DISPLAY_NAMES[row.class] ?? row.class}
+                            size={28}
+                          />
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
+                      <td className="stats-col">
+                        <div className="artifact-stat-lines">
+                          {artifactStatLines(row).map((line) => (
+                            <div key={line}>{line}</div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="col-equipped">
+                        {row.equipped_hero_portrait ? (
+                          <img
+                            className="gear-table__hero"
+                            src={row.equipped_hero_portrait}
+                            alt=""
+                            title={row.equipped_hero_name ?? undefined}
+                          />
+                        ) : (
+                          <span title={row.equipped_hero_name ?? undefined}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {artifacts.length === 0 ? (
+              <p className="text-muted px-4 pb-4 text-sm">
+                No artifacts yet. Add one, or Ctrl+V a screenshot in the add dialog.
+              </p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
       {tab === 'reroll' ? (
         <RerollTab
           gear={gear}
@@ -731,6 +990,7 @@ export function OutfitterPage() {
             <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredEquipmentHeroes.map((hero) => {
                 const loadout = equippedGearByHero.get(hero.slug);
+                const artifact = equippedArtifactByHero.get(hero.slug);
                 return (
                   <article
                     key={hero.slug}
@@ -776,6 +1036,19 @@ export function OutfitterPage() {
                           <EmptySlotTile key={slot} slot={slot} size={48} />
                         );
                       })}
+                      {artifact ? (
+                        <ArtifactPortrait
+                          src={artifact.portrait_path}
+                          size={48}
+                          title={artifact.name}
+                        />
+                      ) : (
+                        <div
+                          className="gear-tile gear-tile--empty"
+                          style={{ width: 48, height: 48 }}
+                          title="Artifact"
+                        />
+                      )}
                     </div>
                   </article>
                 );
@@ -962,6 +1235,16 @@ export function OutfitterPage() {
         onDelete={editingGear ? deleteGear : undefined}
       />
 
+      <ArtifactFormModal
+        open={artifactFormOpen}
+        artifact={editingArtifact}
+        catalog={artifactCatalog}
+        error={formError}
+        onClose={() => setArtifactFormOpen(false)}
+        onSave={saveArtifact}
+        onDelete={editingArtifact ? deleteArtifact : undefined}
+      />
+
       <Modal
         open={selectedHero != null}
         onClose={() => setSelectedHero(null)}
@@ -979,10 +1262,48 @@ export function OutfitterPage() {
                     piece={heroLoadout?.gear.find((row) => row.slot === slot)}
                   />
                 ))}
+                <div className="gear-piece-card glass-surface">
+                  <div className="gear-piece-card__head">
+                    {selectedArtifactId ? (
+                      <ArtifactPortrait
+                        src={
+                          artifacts.find((row) => String(row.id) === selectedArtifactId)
+                            ?.portrait_path ?? null
+                        }
+                        size={72}
+                      />
+                    ) : (
+                      <div
+                        className="gear-tile gear-tile--empty"
+                        style={{ width: 72, height: 72 }}
+                        title="Artifact"
+                      />
+                    )}
+                    <div className="gear-piece-card__meta min-w-0 flex-1">
+                      <div className="gear-piece-card__slot">Artifact</div>
+                      <FieldSelect
+                        className="mt-1 min-w-0"
+                        value={selectedArtifactId}
+                        options={[
+                          { value: '', label: 'None' },
+                          ...artifacts.map((row) => ({
+                            value: String(row.id),
+                            label:
+                              row.equipped_hero_slug && row.equipped_hero_slug !== selectedHero.slug
+                                ? `${row.name} · ${row.equipped_hero_name ?? row.equipped_hero_slug}`
+                                : row.name,
+                            iconSrc: row.portrait_path ?? undefined,
+                          })),
+                        ]}
+                        onChange={setSelectedArtifactId}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="equipment-loadout-stats glass-surface">
-                {heroLoadout?.stats ? (
-                  <OutfitStatsList stats={heroLoadout.stats} hero={selectedHero} />
+                {previewLoadoutStats ? (
+                  <OutfitStatsList stats={previewLoadoutStats} hero={selectedHero} />
                 ) : (
                   <p className="text-muted text-sm">No stats yet.</p>
                 )}
@@ -997,9 +1318,15 @@ export function OutfitterPage() {
                 ))}
               </div>
             </div>
+            {formError && !gearFormOpen && !artifactFormOpen ? (
+              <p className="mt-3 text-sm text-[var(--color-danger)]">{formError}</p>
+            ) : null}
             <div className="modal-actions">
               <Button variant="cancel" onClick={() => setSelectedHero(null)}>
                 Close
+              </Button>
+              <Button variant="accent" onClick={() => void saveHeroArtifact()}>
+                Save
               </Button>
             </div>
           </>

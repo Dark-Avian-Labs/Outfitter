@@ -28,8 +28,22 @@ type CodexHeroRow = {
   active: number;
 };
 
+type CodexArtifactRow = {
+  slug: string;
+  name: string;
+  class: string | null;
+  rarity: string;
+  star_rating: number;
+  exclusive_hero_slug: string | null;
+  is_universal: number;
+  portrait_path: string | null;
+  display_order: number;
+  active: number;
+};
+
 export type CatalogImportSummary = {
   heroes: number;
+  artifacts: number;
   portraitsCopied: number;
   iconsCopied: number;
   missingStats: number;
@@ -62,6 +76,104 @@ function copyIconTree(kind: 'classes' | 'factions'): number {
   return copied;
 }
 
+function tableColumns(source: Database.Database, table: string): Set<string> {
+  return new Set(
+    (source.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+      (column) => column.name,
+    ),
+  );
+}
+
+function readCodexHeroes(source: Database.Database): CodexHeroRow[] {
+  const available = tableColumns(source, 'catalog_heroes');
+  const wanted = [
+    'slug',
+    'name',
+    'class',
+    'faction',
+    'faction_secondary',
+    'rarity',
+    'star_rating',
+    'is_lord',
+    'portrait_path',
+    'base_hp',
+    'base_atk',
+    'base_def',
+    'base_atk_interval',
+    'base_rr_auto',
+    'base_rr_attack',
+    'base_rr_attacked',
+    'display_order',
+    'active',
+  ] as const;
+  const selectList = wanted.filter((column) => available.has(column));
+  if (!selectList.includes('slug') || !selectList.includes('name')) {
+    throw new Error('Codex catalog_heroes is missing slug/name');
+  }
+  const rows = source
+    .prepare(`SELECT ${selectList.join(', ')} FROM catalog_heroes`)
+    .all() as Record<string, unknown>[];
+  return rows.map((row) => ({
+    slug: String(row.slug),
+    name: String(row.name),
+    class: String(row.class ?? ''),
+    faction: String(row.faction ?? ''),
+    faction_secondary: (row.faction_secondary as string | null | undefined) ?? null,
+    rarity: String(row.rarity ?? ''),
+    star_rating: Number(row.star_rating ?? 0),
+    is_lord: Number(row.is_lord ?? 0),
+    portrait_path: (row.portrait_path as string | null | undefined) ?? null,
+    base_hp: (row.base_hp as number | null | undefined) ?? null,
+    base_atk: (row.base_atk as number | null | undefined) ?? null,
+    base_def: (row.base_def as number | null | undefined) ?? null,
+    base_atk_interval: (row.base_atk_interval as number | null | undefined) ?? null,
+    base_rr_auto: (row.base_rr_auto as number | null | undefined) ?? null,
+    base_rr_attack: (row.base_rr_attack as number | null | undefined) ?? null,
+    base_rr_attacked: (row.base_rr_attacked as number | null | undefined) ?? null,
+    display_order: Number(row.display_order ?? 0),
+    active: Number(row.active ?? 1),
+  }));
+}
+
+function readCodexArtifacts(source: Database.Database): CodexArtifactRow[] {
+  const tables = source
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'catalog_artifacts'`)
+    .get() as { name: string } | undefined;
+  if (!tables) return [];
+  const available = tableColumns(source, 'catalog_artifacts');
+  const wanted = [
+    'slug',
+    'name',
+    'class',
+    'rarity',
+    'star_rating',
+    'exclusive_hero_slug',
+    'is_universal',
+    'portrait_path',
+    'display_order',
+    'active',
+  ] as const;
+  const selectList = wanted.filter((column) => available.has(column));
+  if (!selectList.includes('slug') || !selectList.includes('name')) {
+    throw new Error('Codex catalog_artifacts is missing slug/name');
+  }
+  const rows = source
+    .prepare(`SELECT ${selectList.join(', ')} FROM catalog_artifacts`)
+    .all() as Record<string, unknown>[];
+  return rows.map((row) => ({
+    slug: String(row.slug),
+    name: String(row.name),
+    class: String(row.class ?? '').trim() || null,
+    rarity: String(row.rarity ?? ''),
+    star_rating: Number(row.star_rating ?? 0),
+    exclusive_hero_slug: (row.exclusive_hero_slug as string | null | undefined) ?? null,
+    is_universal: Number(row.is_universal ?? 1),
+    portrait_path: (row.portrait_path as string | null | undefined) ?? null,
+    display_order: Number(row.display_order ?? 0),
+    active: Number(row.active ?? 1),
+  }));
+}
+
 export function importCodexCatalog(): CatalogImportSummary {
   if (!fs.existsSync(CODEX_WOR_DB_PATH)) {
     throw Object.assign(new Error(`Codex WoR database not found at ${CODEX_WOR_DB_PATH}`), {
@@ -72,59 +184,10 @@ export function importCodexCatalog(): CatalogImportSummary {
   const source = new Database(CODEX_WOR_DB_PATH, { readonly: true, fileMustExist: true });
   source.pragma('busy_timeout = 5000');
   let heroes: CodexHeroRow[] = [];
+  let artifacts: CodexArtifactRow[] = [];
   try {
-    const available = new Set(
-      (source.prepare('PRAGMA table_info(catalog_heroes)').all() as { name: string }[]).map(
-        (column) => column.name,
-      ),
-    );
-    const wanted = [
-      'slug',
-      'name',
-      'class',
-      'faction',
-      'faction_secondary',
-      'rarity',
-      'star_rating',
-      'is_lord',
-      'portrait_path',
-      'base_hp',
-      'base_atk',
-      'base_def',
-      'base_atk_interval',
-      'base_rr_auto',
-      'base_rr_attack',
-      'base_rr_attacked',
-      'display_order',
-      'active',
-    ] as const;
-    const selectList = wanted.filter((column) => available.has(column));
-    if (!selectList.includes('slug') || !selectList.includes('name')) {
-      throw new Error('Codex catalog_heroes is missing slug/name');
-    }
-    const rows = source
-      .prepare(`SELECT ${selectList.join(', ')} FROM catalog_heroes`)
-      .all() as Record<string, unknown>[];
-    heroes = rows.map((row) => ({
-      slug: String(row.slug),
-      name: String(row.name),
-      class: String(row.class ?? ''),
-      faction: String(row.faction ?? ''),
-      faction_secondary: (row.faction_secondary as string | null | undefined) ?? null,
-      rarity: String(row.rarity ?? ''),
-      star_rating: Number(row.star_rating ?? 0),
-      is_lord: Number(row.is_lord ?? 0),
-      portrait_path: (row.portrait_path as string | null | undefined) ?? null,
-      base_hp: (row.base_hp as number | null | undefined) ?? null,
-      base_atk: (row.base_atk as number | null | undefined) ?? null,
-      base_def: (row.base_def as number | null | undefined) ?? null,
-      base_atk_interval: (row.base_atk_interval as number | null | undefined) ?? null,
-      base_rr_auto: (row.base_rr_auto as number | null | undefined) ?? null,
-      base_rr_attack: (row.base_rr_attack as number | null | undefined) ?? null,
-      base_rr_attacked: (row.base_rr_attacked as number | null | undefined) ?? null,
-      display_order: Number(row.display_order ?? 0),
-      active: Number(row.active ?? 1),
-    }));
+    heroes = readCodexHeroes(source);
+    artifacts = readCodexArtifacts(source);
   } finally {
     source.close();
   }
@@ -156,6 +219,25 @@ export function importCodexCatalog(): CatalogImportSummary {
       base_rr_auto = excluded.base_rr_auto,
       base_rr_attack = excluded.base_rr_attack,
       base_rr_attacked = excluded.base_rr_attacked,
+      display_order = excluded.display_order,
+      active = excluded.active
+  `);
+  const upsertArtifact = db.prepare(`
+    INSERT INTO catalog_artifacts (
+      slug, name, class, rarity, star_rating, exclusive_hero_slug, is_universal,
+      portrait_path, display_order, active
+    ) VALUES (
+      @slug, @name, @class, @rarity, @star_rating, @exclusive_hero_slug, @is_universal,
+      @portrait_path, @display_order, @active
+    )
+    ON CONFLICT(slug) DO UPDATE SET
+      name = excluded.name,
+      class = excluded.class,
+      rarity = excluded.rarity,
+      star_rating = excluded.star_rating,
+      exclusive_hero_slug = excluded.exclusive_hero_slug,
+      is_universal = excluded.is_universal,
+      portrait_path = COALESCE(excluded.portrait_path, catalog_artifacts.portrait_path),
       display_order = excluded.display_order,
       active = excluded.active
   `);
@@ -194,10 +276,38 @@ export function importCodexCatalog(): CatalogImportSummary {
         active: hero.active ?? 1,
       });
     }
+    for (const artifact of artifacts) {
+      const relative = relativeFromWorPath(artifact.portrait_path);
+      if (relative) {
+        const copied = copyIfExists(
+          path.join(CODEX_WOR_IMAGES_DIR, relative),
+          path.join(HERO_IMAGES_DIR, relative),
+        );
+        if (copied) portraitsCopied += 1;
+      }
+      upsertArtifact.run({
+        slug: artifact.slug,
+        name: artifact.name,
+        class: artifact.class?.trim() || null,
+        rarity: artifact.rarity,
+        star_rating: artifact.star_rating,
+        exclusive_hero_slug: artifact.exclusive_hero_slug,
+        is_universal: artifact.is_universal,
+        portrait_path: relative ? `/hero-images/${relative.replace(/\\/g, '/')}` : null,
+        display_order: artifact.display_order,
+        active: artifact.active ?? 1,
+      });
+    }
   });
   transaction();
 
   const iconsCopied = copyIconTree('classes') + copyIconTree('factions');
   writeTacticianClassIconSvg();
-  return { heroes: heroes.length, portraitsCopied, iconsCopied, missingStats };
+  return {
+    heroes: heroes.length,
+    artifacts: artifacts.length,
+    portraitsCopied,
+    iconsCopied,
+    missingStats,
+  };
 }

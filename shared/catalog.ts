@@ -186,6 +186,53 @@ export const FILTER_STAR_RARITY_LABELS: Record<3 | 4 | 5 | 6, string> = {
   6: 'Mythic',
 };
 
+export const ARTIFACT_LEVEL_MIN = 1;
+export const ARTIFACT_LEVEL_MAX = 25;
+export const ARTIFACT_PROMOTION_MAX = 5;
+export const ARTIFACT_PROMOTION_MAX_LEVEL = [10, 13, 16, 19, 22, 25] as const;
+
+export const ARTIFACT_SECONDARY_STATS = [
+  'atkBonus',
+  'defBonus',
+  'hpBonus',
+  'rageRegen',
+  'critRate',
+  'critDmg',
+  'healingEffect',
+  'atkSpd',
+] as const;
+export type ArtifactSecondaryStat = (typeof ARTIFACT_SECONDARY_STATS)[number];
+
+export const ARTIFACT_SECONDARY_RANGE: Record<ArtifactSecondaryStat, { min: number; max: number }> =
+  {
+    atkBonus: { min: 3, max: 15 },
+    defBonus: { min: 3, max: 15 },
+    hpBonus: { min: 3, max: 15 },
+    rageRegen: { min: 3, max: 15 },
+    critRate: { min: 3, max: 15 },
+    critDmg: { min: 3, max: 15 },
+    healingEffect: { min: 3, max: 15 },
+    atkSpd: { min: 10, max: 50 },
+  };
+
+export function isArtifactSecondaryStat(value: string): value is ArtifactSecondaryStat {
+  return (ARTIFACT_SECONDARY_STATS as readonly string[]).includes(value);
+}
+
+export function promotionFromMaxLevel(maxLevel: number): number {
+  if (maxLevel <= 10) return 0;
+  if (maxLevel <= 13) return 1;
+  if (maxLevel <= 16) return 2;
+  if (maxLevel <= 19) return 3;
+  if (maxLevel <= 22) return 4;
+  return ARTIFACT_PROMOTION_MAX;
+}
+
+export function maxLevelForPromotion(promotion: number): number {
+  const index = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
+  return ARTIFACT_PROMOTION_MAX_LEVEL[index] ?? ARTIFACT_LEVEL_MAX;
+}
+
 export function formatStatValue(stat: GearStatKey, value: number): string {
   if (PERCENT_STATS.has(stat)) return `${trimNumber(value)}%`;
   return trimNumber(value);

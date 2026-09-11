@@ -74,9 +74,42 @@ export function createAppSchema(db: Database.Database): void {
       FOREIGN KEY (account_id) REFERENCES game_accounts(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS catalog_artifacts (
+      slug TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      class TEXT,
+      rarity TEXT NOT NULL,
+      star_rating INTEGER NOT NULL,
+      exclusive_hero_slug TEXT,
+      is_universal INTEGER NOT NULL DEFAULT 1,
+      portrait_path TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      active INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS artifact_pieces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL,
+      catalog_slug TEXT NOT NULL,
+      level INTEGER NOT NULL,
+      promotion INTEGER NOT NULL DEFAULT 0,
+      hp_base REAL NOT NULL,
+      hp_bonus REAL NOT NULL DEFAULT 0,
+      atk_base REAL NOT NULL,
+      atk_bonus REAL NOT NULL DEFAULT 0,
+      secondary_stat TEXT,
+      secondary_value REAL,
+      equipped_hero_slug TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (account_id) REFERENCES game_accounts(id) ON DELETE CASCADE,
+      FOREIGN KEY (catalog_slug) REFERENCES catalog_artifacts(slug)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_game_accounts_clerk_user ON game_accounts(clerk_user_id);
     CREATE INDEX IF NOT EXISTS idx_gear_account ON gear_pieces(account_id);
     CREATE INDEX IF NOT EXISTS idx_gear_equipped ON gear_pieces(account_id, equipped_hero_slug);
+    CREATE INDEX IF NOT EXISTS idx_artifact_account ON artifact_pieces(account_id);
+    CREATE INDEX IF NOT EXISTS idx_artifact_equipped ON artifact_pieces(account_id, equipped_hero_slug);
   `);
 
   repairDuplicateActiveAccounts(db);
@@ -85,6 +118,9 @@ export function createAppSchema(db: Database.Database): void {
       ON game_accounts(clerk_user_id) WHERE is_active = 1;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_gear_hero_slot
       ON gear_pieces(account_id, equipped_hero_slug, slot)
+      WHERE equipped_hero_slug IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_artifact_hero
+      ON artifact_pieces(account_id, equipped_hero_slug)
       WHERE equipped_hero_slug IS NOT NULL;
   `);
 }

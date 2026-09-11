@@ -2,7 +2,7 @@ import { createApp } from './app.js';
 import { APP_NAME, HOST, NODE_ENV, PORT, SESSION_DB_PATH, SHUTDOWN_TIMEOUT_MS } from './config.js';
 import { closeAppDb, getAppDb } from './db/appDb.js';
 import { closeSessionDb } from './db/connection.js';
-import { catalogHeroCount } from './db/queries.js';
+import { catalogArtifactCount, catalogHeroCount } from './db/queries.js';
 import { importCodexCatalog } from './import/codexCatalog.js';
 import { writeTacticianClassIconSvg } from './import/tacticianIcon.js';
 import { log } from './logger.js';
@@ -13,7 +13,7 @@ log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
 
 try {
   const db = getAppDb();
-  if (catalogHeroCount(db) === 0) {
+  if (catalogHeroCount(db) === 0 || catalogArtifactCount(db) === 0) {
     const summary = importCodexCatalog();
     log('info', 'Imported Codex WoR catalog', summary);
   }

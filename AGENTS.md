@@ -14,16 +14,16 @@ Default listen port is **3004**. Vite defaults to **5174**. See `README.md` for 
 
 Two SQLite files. Do not point them at the same path, and do not reuse Codex, Armory, or BudgetPlanner files.
 
-| File    | Env               | Role                                     |
-| ------- | ----------------- | ---------------------------------------- |
-| App     | `APP_DB_PATH`     | Accounts, catalog copy, gear, loadouts.  |
-| Session | `SESSION_DB_PATH` | Express sessions / CSRF, active account. |
+| File    | Env               | Role                                               |
+| ------- | ----------------- | -------------------------------------------------- |
+| App     | `APP_DB_PATH`     | Accounts, catalog copy, gear, artifacts, loadouts. |
+| Session | `SESSION_DB_PATH` | Express sessions / CSRF, active account.           |
 
 Hero portraits and class/faction icons live in `HERO_IMAGES_DIR` (served at `/hero-images`). They are copied from Codex on catalog import.
 
 ## Codex catalog
 
-Hero identity and Lv.60 A0 combat stats come from Codex's Watcher of Realms DB (`CODEX_WOR_DB_PATH`, read-only). Codex scrapes wiki infobox fields (`hp`, `atk`, `def`, `atkinterval`, `rr_auto`, `rr_attack`, `rr_attacked`) in the `fandomHeroStats` pipeline step. Outfitter copies those rows on boot if its catalog is empty, from the Admin page (user menu, `apps.outfitter === 'admin'`), or via `POST /api/admin/import-catalog` / `pnpm run catalog:import`.
+Hero identity and Lv.60 A0 combat stats come from Codex's Watcher of Realms DB (`CODEX_WOR_DB_PATH`, read-only). Codex scrapes wiki infobox fields (`hp`, `atk`, `def`, `atkinterval`, `rr_auto`, `rr_attack`, `rr_attacked`) in the `fandomHeroStats` pipeline step. Outfitter copies heroes and artifacts on boot if either catalog table is empty, from the Admin page (user menu, `apps.outfitter === 'admin'`), or via `POST /api/admin/import-catalog` / `pnpm run catalog:import`.
 
 If wiki stats are missing, hero bases are 0 until the user edits them on the Outfit tab. Edits persist per game account in `account_hero_stats`.
 
@@ -49,7 +49,9 @@ Add-gear accepts Ctrl+V of a Watcher of Realms gear screenshot. OCR only fills s
 
 In-game piece art and set badges live in `public/gear/` (from [prospector.gg/gearsets](https://prospector.gg/gearsets/)). Piece art already includes the set badge, so tiles do not overlay it. Standalone badges in `public/gear/sets/` are kept for later filter UI. Empty slot silhouettes are `public/gear/slots/{slot}.webp` (type filters, unequipped loadout slots, missing piece fallback).
 
-One piece can be equipped on one hero. One loadout per hero. Saving an Outfit result unequips that hero's previous pieces. "Include equipped" uses this hero's gear and never other heroes'. Force sets restricts the search to the chosen left/right sets.
+Add-artifact Ctrl+V fills catalog name, level (`+22/25`), HP/ATK base+bonus, and an optional secondary. Promotion is inferred from max level: 1–10 P0, 11–13 P1, 14–16 P2, 17–19 P3, 20–22 P4, 23–25 P5. The Outfit tab does not pick artifacts; assign them in Equipment.
+
+One piece can be equipped on one hero. One artifact can be equipped on one hero. One loadout per hero. Saving an Outfit result unequips that hero's previous pieces and leaves the artifact alone. "Include equipped" uses this hero's gear and never other heroes'. Force sets restricts the search to the chosen left/right sets.
 
 ## Toolchain
 
