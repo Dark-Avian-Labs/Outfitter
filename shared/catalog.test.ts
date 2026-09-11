@@ -5,7 +5,9 @@ import {
   gaugeColor,
   gaugeRatio,
   gearHasOutOfRangeStats,
+  isArtifactSecondaryInRange,
   maxLevelForPromotion,
+  outOfRangeArtifactLabels,
   outOfRangeGearLabels,
   promotionFromMaxLevel,
 } from './catalog.js';
@@ -89,6 +91,52 @@ describe('artifact promotion', () => {
     expect(artifactRarityColor('legendary')).toBe('var(--color-rarity-gold)');
     expect(artifactRarityColor('', 6)).toBe('var(--color-rarity-orange)');
     expect(artifactRarityColor('')).toBe('var(--color-rarity-gold)');
+  });
+
+  it('checks artifact secondary rolls against catalog ranges', () => {
+    expect(isArtifactSecondaryInRange('atkSpd', 49)).toBe(true);
+    expect(isArtifactSecondaryInRange('atkSpd', 9)).toBe(false);
+    expect(isArtifactSecondaryInRange('atkBonus', 15)).toBe(true);
+    expect(isArtifactSecondaryInRange('atkBonus', 16)).toBe(false);
+  });
+
+  it('flags artifact HP/ATK rolls outside rarity bands', () => {
+    const mythic = {
+      rarity: 'mythic',
+      hp_base: 4650,
+      hp_bonus: 0,
+      atk_base: 1497,
+      atk_bonus: 0,
+      secondary_stat: null,
+      secondary_value: null,
+    };
+    expect(outOfRangeArtifactLabels(mythic)).toEqual([]);
+    expect(outOfRangeArtifactLabels({ ...mythic, hp_base: 3700, atk_base: 1227 })).toEqual([]);
+    expect(outOfRangeArtifactLabels({ ...mythic, hp_base: 2199 })).toEqual(['HP']);
+    expect(outOfRangeArtifactLabels({ ...mythic, hp_bonus: 49 })).toEqual(['HP bonus']);
+    expect(outOfRangeArtifactLabels({ ...mythic, hp_bonus: 50, atk_bonus: 25 })).toEqual([]);
+    expect(
+      outOfRangeArtifactLabels({
+        rarity: 'legendary',
+        hp_base: 1950,
+        hp_bonus: 0,
+        atk_base: 623,
+        atk_bonus: 0,
+        secondary_stat: null,
+        secondary_value: null,
+      }),
+    ).toEqual([]);
+    expect(
+      outOfRangeArtifactLabels({
+        rarity: 'legendary',
+        hp_base: 4650,
+        hp_bonus: 0,
+        atk_base: 1497,
+        atk_bonus: 0,
+        secondary_stat: null,
+        secondary_value: null,
+      }),
+    ).toEqual(['HP', 'ATK']);
   });
 });
 

@@ -1,11 +1,16 @@
+import {
+  artifactIdentityKey,
+  findDuplicateArtifact,
+  identityFromArtifact,
+} from '@shared/artifactDuplicate';
 import { applyArtifactOcr, type ArtifactOcrFields } from '@shared/artifactOcr';
 import {
   ARTIFACT_LEVEL_MIN,
   ARTIFACT_PROMOTION_MAX,
   ARTIFACT_SECONDARY_STATS,
   GEAR_STAT_LABELS,
-  formatStatValue,
   maxLevelForPromotion,
+  outOfRangeArtifactLabels,
   type ArtifactSecondaryStat,
 } from '@shared/catalog';
 import { useEffect, useState } from 'react';
@@ -51,6 +56,7 @@ export function ArtifactFormModal({
   open,
   artifact,
   catalog,
+  existingArtifacts,
   error,
   onClose,
   onSave,
@@ -59,6 +65,7 @@ export function ArtifactFormModal({
   open: boolean;
   artifact: ArtifactView | null;
   catalog: CatalogArtifact[];
+  existingArtifacts: ArtifactView[];
   error: string | null;
   onClose: () => void;
   onSave: (draft: ArtifactDraft) => Promise<void>;
@@ -67,16 +74,36 @@ export function ArtifactFormModal({
   const [draft, setDraft] = useState<ArtifactDraft>(() => draftFromArtifact(artifact, catalog));
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [duplicateWarned, setDuplicateWarned] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const maxLevel = maxLevelForPromotion(draft.promotion);
+  const identity = identityFromArtifact(draft);
+  const identityKey = artifactIdentityKey(identity);
+  const duplicate = findDuplicateArtifact(existingArtifacts, identity, artifact?.id);
+  const selectedCatalog = catalog.find((row) => row.slug === draft.catalog_slug);
+  const illegalLabels = outOfRangeArtifactLabels({
+    rarity: selectedCatalog?.rarity ?? '',
+    star_rating: selectedCatalog?.star_rating ?? 0,
+    hp_base: draft.hp_base,
+    hp_bonus: draft.hp_bonus,
+    atk_base: draft.atk_base,
+    atk_bonus: draft.atk_bonus,
+    secondary_stat: draft.secondary_stat,
+    secondary_value: draft.secondary_value,
+  });
 
   useEffect(() => {
     if (open) {
       setDraft(draftFromArtifact(artifact, catalog));
       setOcrStatus(null);
+      setDuplicateWarned(false);
       setConfirmDelete(false);
     }
   }, [artifact, catalog, open]);
+
+  useEffect(() => {
+    setDuplicateWarned(false);
+  }, [identityKey]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -128,6 +155,14 @@ export function ArtifactFormModal({
     window.addEventListener('paste', readClipboardImage);
     return () => window.removeEventListener('paste', readClipboardImage);
   }, [open]);
+
+  function saveDraft(): void {
+    if (duplicate && !duplicateWarned) {
+      setDuplicateWarned(true);
+      return;
+    }
+    void onSave(draft);
+  }
 
   return (
     <>
@@ -189,7 +224,7 @@ export function ArtifactFormModal({
           <label className="form-group block">
             <span>HP</span>
             <input
-              className="form-input mt-1 w-full"
+              className={`form-input mt-1 w-full${illegalLabels.includes('HP') ? ' form-input--illegal' : ''}`}
               type="number"
               min={0}
               value={draft.hp_base}
@@ -199,7 +234,7 @@ export function ArtifactFormModal({
           <label className="form-group block">
             <span>HP bonus</span>
             <input
-              className="form-input mt-1 w-full"
+              className={`form-input mt-1 w-full${illegalLabels.includes('HP bonus') ? ' form-input--illegal' : ''}`}
               type="number"
               min={0}
               value={draft.hp_bonus}
@@ -209,7 +244,7 @@ export function ArtifactFormModal({
           <label className="form-group block">
             <span>ATK</span>
             <input
-              className="form-input mt-1 w-full"
+              className={`form-input mt-1 w-full${illegalLabels.includes('ATK') ? ' form-input--illegal' : ''}`}
               type="number"
               min={0}
               value={draft.atk_base}
@@ -219,7 +254,7 @@ export function ArtifactFormModal({
           <label className="form-group block">
             <span>ATK bonus</span>
             <input
-              className="form-input mt-1 w-full"
+              className={`form-input mt-1 w-full${illegalLabels.includes('ATK bonus') ? ' form-input--illegal' : ''}`}
               type="number"
               min={0}
               value={draft.atk_bonus}
@@ -247,7 +282,12 @@ export function ArtifactFormModal({
           <label className="form-group block">
             <span>Secondary value</span>
             <input
-              className="form-input mt-1 w-full"
+              className={`form-input mt-1 w-full${
+                draft.secondary_stat &&
+                illegalLabels.includes(GEAR_STAT_LABELS[draft.secondary_stat])
+                  ? ' form-input--illegal'
+                  : ''
+              }`}
               type="number"
               min={0}
               disabled={!draft.secondary_stat}
@@ -256,14 +296,22 @@ export function ArtifactFormModal({
                 setDraft({ ...draft, secondary_value: Number(event.target.value) })
               }
             />
-            {draft.secondary_stat ? (
-              <span className="text-muted mt-1 block text-xs">
-                {formatStatValue(draft.secondary_stat, draft.secondary_value)}
-              </span>
-            ) : null}
           </label>
         </div>
         {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}
+        {illegalLabels.length > 0 ? (
+          <p className="mt-3 text-sm text-[var(--color-danger)]">
+            Out of range: {illegalLabels.join(', ')}
+          </p>
+        ) : null}
+        {duplicateWarned && duplicate ? (
+          <p
+            className="mt-3 rounded-lg border border-[var(--color-warning)] bg-[color-mix(in_oklab,var(--color-warning)_14%,transparent)] px-3 py-2 text-sm"
+            role="status"
+          >
+            An artifact with the same name and stats already exists. Save anyway to keep a copy.
+          </p>
+        ) : null}
         <div className="modal-actions">
           {onDelete ? (
             <Button variant="danger" onClick={() => setConfirmDelete(true)}>
@@ -273,12 +321,8 @@ export function ArtifactFormModal({
           <Button variant="cancel" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            variant="accent"
-            disabled={ocrBusy || !draft.catalog_slug}
-            onClick={() => void onSave(draft)}
-          >
-            Save
+          <Button variant="accent" disabled={ocrBusy || !draft.catalog_slug} onClick={saveDraft}>
+            {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
           </Button>
         </div>
       </Modal>

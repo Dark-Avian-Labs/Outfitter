@@ -734,6 +734,16 @@ html.ui-acrylic:not(.dark) {
     outline: none;
   }
 
+  .form-input--illegal {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+
+  .form-input--illegal:focus {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-danger) 25%, transparent);
+  }
+
   .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
@@ -1961,6 +1971,10 @@ html.ui-clear .stale-update-banner::after {
   text-align: left;
 }
 
+.artifact-stat-lines__line.is-illegal {
+  color: var(--color-danger);
+}
+
 .gear-table th,
 .gear-table td {
   text-align: center;
@@ -2153,7 +2167,7 @@ html.ui-clear .stale-update-banner::after {
   position: absolute;
   z-index: 3;
   left: 50%;
-  bottom: 10%;
+  bottom: 18%;
   display: flex;
   align-items: flex-start;
   justify-content: center;

@@ -13,6 +13,7 @@ import {
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
+  outOfRangeArtifactLabels,
   outOfRangeGearLabels,
   trimNumber,
   type GearSlot,
@@ -156,7 +157,7 @@ function heroBase(hero: HeroRow) {
   };
 }
 
-const ARTIFACT_PIP_DIP = [0, 0.18, 0.38, 0.18, 0] as const;
+const ARTIFACT_PIP_DIP = [0, 0.36, 0.72, 0.36, 0] as const;
 
 function ArtifactPortrait({
   src,
@@ -174,7 +175,7 @@ function ArtifactPortrait({
   starRating?: number;
 }) {
   const filled = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
-  const pip = Math.max(6, Math.min(Math.round(size * 0.18), Math.floor((size - 8) / 5.5)));
+  const pip = Math.max(5, Math.min(Math.round(size * 0.17), Math.floor((size - 14) / 5.8)));
   const color = artifactRarityColor(rarity, starRating);
   return (
     <div
@@ -200,15 +201,28 @@ function ArtifactPortrait({
   );
 }
 
-function artifactStatLines(row: ArtifactView): string[] {
+function artifactStatLines(
+  row: ArtifactView,
+): Array<{ key: string; text: string; illegal: boolean }> {
+  const illegal = new Set(outOfRangeArtifactLabels(row));
   const lines = [
-    `HP ${row.hp_base}${row.hp_bonus > 0 ? `+${row.hp_bonus}` : ''}`,
-    `ATK ${row.atk_base}${row.atk_bonus > 0 ? `+${row.atk_bonus}` : ''}`,
+    {
+      key: 'hp',
+      text: `HP ${row.hp_base}${row.hp_bonus > 0 ? `+${row.hp_bonus}` : ''}`,
+      illegal: illegal.has('HP') || illegal.has('HP bonus'),
+    },
+    {
+      key: 'atk',
+      text: `ATK ${row.atk_base}${row.atk_bonus > 0 ? `+${row.atk_bonus}` : ''}`,
+      illegal: illegal.has('ATK') || illegal.has('ATK bonus'),
+    },
   ];
   if (row.secondary_stat && row.secondary_value != null) {
-    lines.push(
-      `${GEAR_STAT_LABELS[row.secondary_stat]} ${formatStatValue(row.secondary_stat, row.secondary_value)}`,
-    );
+    lines.push({
+      key: 'secondary',
+      text: `${GEAR_STAT_LABELS[row.secondary_stat]} ${formatStatValue(row.secondary_stat, row.secondary_value)}`,
+      illegal: illegal.has(GEAR_STAT_LABELS[row.secondary_stat]),
+    });
   }
   return lines;
 }
@@ -881,70 +895,85 @@ export function OutfitterPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {artifactsByName.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        setEditingArtifact(row);
-                        setFormError(null);
-                        setArtifactFormOpen(true);
-                      }}
-                    >
-                      <td className="col-icon">
-                        <ArtifactPortrait
-                          src={row.portrait_path}
-                          size={40}
-                          title={row.name}
-                          promotion={row.promotion}
-                          rarity={row.rarity}
-                          starRating={row.star_rating}
-                        />
-                      </td>
-                      <td className="col-name" title={row.name}>
-                        {row.name}
-                      </td>
-                      <td className="col-limit">
-                        {row.exclusive_hero_portrait ? (
-                          <img
-                            className="gear-table__hero"
-                            src={row.exclusive_hero_portrait}
-                            alt=""
-                            title={row.exclusive_hero_name ?? undefined}
+                  {artifactsByName.map((row) => {
+                    const illegalLabels = outOfRangeArtifactLabels(row);
+                    return (
+                      <tr
+                        key={row.id}
+                        className={`cursor-pointer${illegalLabels.length > 0 ? ' gear-row--illegal' : ''}`}
+                        title={
+                          illegalLabels.length > 0
+                            ? `Out of range: ${illegalLabels.join(', ')}`
+                            : undefined
+                        }
+                        onClick={() => {
+                          setEditingArtifact(row);
+                          setFormError(null);
+                          setArtifactFormOpen(true);
+                        }}
+                      >
+                        <td className="col-icon">
+                          <ArtifactPortrait
+                            src={row.portrait_path}
+                            size={40}
+                            title={row.name}
+                            promotion={row.promotion}
+                            rarity={row.rarity}
+                            starRating={row.star_rating}
                           />
-                        ) : row.class ? (
-                          <WorIconWithFallback
-                            className="invert-on-light mx-auto"
-                            primarySrc={classIconUrls(row.class).primary}
-                            fallbackSrc={classIconUrls(row.class).fallback}
-                            alt={CLASS_DISPLAY_NAMES[row.class] ?? row.class}
-                            size={28}
-                          />
-                        ) : (
-                          <span>—</span>
-                        )}
-                      </td>
-                      <td className="stats-col">
-                        <div className="artifact-stat-lines">
-                          {artifactStatLines(row).map((line) => (
-                            <div key={line}>{line}</div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="col-equipped">
-                        {row.equipped_hero_portrait ? (
-                          <img
-                            className="gear-table__hero"
-                            src={row.equipped_hero_portrait}
-                            alt=""
-                            title={row.equipped_hero_name ?? undefined}
-                          />
-                        ) : (
-                          <span title={row.equipped_hero_name ?? undefined}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="col-name" title={row.name}>
+                          {row.name}
+                        </td>
+                        <td className="col-limit">
+                          {row.exclusive_hero_portrait ? (
+                            <img
+                              className="gear-table__hero"
+                              src={row.exclusive_hero_portrait}
+                              alt=""
+                              title={row.exclusive_hero_name ?? undefined}
+                            />
+                          ) : row.class ? (
+                            <WorIconWithFallback
+                              className="invert-on-light mx-auto"
+                              primarySrc={classIconUrls(row.class).primary}
+                              fallbackSrc={classIconUrls(row.class).fallback}
+                              alt={CLASS_DISPLAY_NAMES[row.class] ?? row.class}
+                              size={28}
+                            />
+                          ) : (
+                            <span>—</span>
+                          )}
+                        </td>
+                        <td className="stats-col">
+                          <div className="artifact-stat-lines">
+                            {artifactStatLines(row).map((line) => (
+                              <div
+                                key={line.key}
+                                className={
+                                  line.illegal ? 'artifact-stat-lines__line is-illegal' : undefined
+                                }
+                              >
+                                {line.text}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="col-equipped">
+                          {row.equipped_hero_portrait ? (
+                            <img
+                              className="gear-table__hero"
+                              src={row.equipped_hero_portrait}
+                              alt=""
+                              title={row.equipped_hero_name ?? undefined}
+                            />
+                          ) : (
+                            <span title={row.equipped_hero_name ?? undefined}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1288,6 +1317,7 @@ export function OutfitterPage() {
         open={artifactFormOpen}
         artifact={editingArtifact}
         catalog={artifactCatalog}
+        existingArtifacts={artifacts}
         error={formError}
         onClose={() => setArtifactFormOpen(false)}
         onSave={saveArtifact}
