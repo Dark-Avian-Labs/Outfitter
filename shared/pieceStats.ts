@@ -84,7 +84,34 @@ export function pieceStatBag(piece: GearPieceInput): StatBag {
   return bag;
 }
 
-export function loadoutStatBag(pieces: GearPieceInput[]): StatBag {
+export type ArtifactStatInput = {
+  hp_base: number;
+  hp_bonus: number;
+  atk_base: number;
+  atk_bonus: number;
+  secondary_stat: GearStatKey | null;
+  secondary_value: number | null;
+};
+
+export function artifactStatBag(artifact: ArtifactStatInput): StatBag {
+  let bag = addStatBags(EMPTY_STAT_BAG, {
+    flatHp: artifact.hp_base + artifact.hp_bonus,
+    flatAtk: artifact.atk_base + artifact.atk_bonus,
+  });
+  if (
+    artifact.secondary_stat != null &&
+    artifact.secondary_value != null &&
+    GEAR_STAT_KEYS.includes(artifact.secondary_stat)
+  ) {
+    bag = applyGearStat(bag, artifact.secondary_stat, artifact.secondary_value);
+  }
+  return bag;
+}
+
+export function loadoutStatBag(
+  pieces: GearPieceInput[],
+  artifact?: ArtifactStatInput | null,
+): StatBag {
   let bag = EMPTY_STAT_BAG;
   for (const piece of pieces) {
     bag = addStatBags(bag, pieceStatBag(piece));
@@ -108,5 +135,6 @@ export function loadoutStatBag(pieces: GearPieceInput[]): StatBag {
     const set = SET_BY_KEY[bangle.setKey];
     if (set) bag = applySetBonus(bag, set.bonus);
   }
+  if (artifact) bag = addStatBags(bag, artifactStatBag(artifact));
   return bag;
 }

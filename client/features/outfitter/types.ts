@@ -1,4 +1,4 @@
-import type { HeroClassKey, FactionKey } from '@shared/catalog';
+import type { ArtifactSecondaryStat, HeroClassKey, FactionKey } from '@shared/catalog';
 import type { FinalStats } from '@shared/formulas';
 
 import type { GearView } from './GearTile';
@@ -30,6 +30,44 @@ export type HeroRow = {
   base_atk: number;
   base_def: number;
   base_atk_interval: number;
+};
+
+export type CatalogArtifact = {
+  slug: string;
+  name: string;
+  class: HeroClassKey | null;
+  rarity: string;
+  star_rating: number;
+  exclusive_hero_slug: string | null;
+  is_universal: number;
+  portrait_path: string | null;
+  exclusive_hero_name: string | null;
+  exclusive_hero_portrait: string | null;
+};
+
+export type ArtifactView = {
+  id: number;
+  catalog_slug: string;
+  name: string;
+  class: HeroClassKey | null;
+  rarity: string;
+  star_rating: number;
+  exclusive_hero_slug: string | null;
+  is_universal: number;
+  portrait_path: string | null;
+  level: number;
+  promotion: number;
+  hp_base: number;
+  hp_bonus: number;
+  atk_base: number;
+  atk_bonus: number;
+  secondary_stat: ArtifactSecondaryStat | null;
+  secondary_value: number | null;
+  equipped_hero_slug: string | null;
+  equipped_hero_name: string | null;
+  equipped_hero_portrait: string | null;
+  exclusive_hero_name: string | null;
+  exclusive_hero_portrait: string | null;
 };
 
 export type OutfitResult = {

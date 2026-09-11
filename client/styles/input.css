@@ -1940,6 +1940,27 @@ html.ui-clear .stale-update-banner::after {
   width: auto;
 }
 
+.artifact-table {
+  min-width: 44rem;
+}
+
+.artifact-table col.col-name {
+  width: 16rem;
+}
+
+.artifact-table col.col-limit {
+  width: 120px;
+}
+
+.artifact-stat-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
 .gear-table th,
 .gear-table td {
   text-align: center;
@@ -1948,13 +1969,15 @@ html.ui-clear .stale-update-banner::after {
 
 .gear-table .col-icon,
 .gear-table .col-type,
-.gear-table .col-equipped {
+.gear-table .col-equipped,
+.gear-table .col-limit {
   padding-inline: 8px;
 }
 
 .gear-table .col-type,
 .gear-table .col-set,
-.gear-table .col-main {
+.gear-table .col-main,
+.gear-table .col-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

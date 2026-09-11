@@ -5,6 +5,7 @@ import { apiFetch } from '../../utils/api';
 
 type CatalogStatus = {
   heroes: number;
+  artifacts: number;
   missingStats: number;
 };
 
@@ -46,7 +47,11 @@ export function AdminPage() {
       }
       if (body) {
         setLastImport(body);
-        setStatus({ heroes: body.heroes, missingStats: body.missingStats });
+        setStatus({
+          heroes: body.heroes,
+          artifacts: body.artifacts,
+          missingStats: body.missingStats,
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Catalog import failed');
@@ -59,13 +64,17 @@ export function AdminPage() {
     <section className="glass-surface max-w-xl p-6">
       <h1 className="text-2xl font-semibold">Admin</h1>
       <p className="text-muted mt-1 text-sm">
-        Copy Watcher of Realms heroes and portraits from the Codex database. Use this on the live
-        server; there is no CLI there.
+        Copy Watcher of Realms heroes, artifacts, and portraits from the Codex database. Use this on
+        the live server; there is no CLI there.
       </p>
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-muted">Heroes</dt>
           <dd className="text-lg font-semibold">{status?.heroes ?? '—'}</dd>
+        </div>
+        <div>
+          <dt className="text-muted">Artifacts</dt>
+          <dd className="text-lg font-semibold">{status?.artifacts ?? '—'}</dd>
         </div>
         <div>
           <dt className="text-muted">Missing wiki stats</dt>

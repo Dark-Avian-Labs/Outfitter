@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 
 import { APP_NAME } from '../config.js';
 import { accountsRouter, adminRouter } from './accounts.js';
+import { artifactsRouter } from './artifacts.js';
 import { authRouter } from './auth.js';
 import { gearRouter } from './gear.js';
 import { heroesRouter } from './heroes.js';
@@ -24,5 +25,6 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/accounts', accountsRouter);
 apiRouter.use('/admin', adminRouter);
 apiRouter.use('/gear', gearRouter);
+apiRouter.use('/artifacts', artifactsRouter);
 apiRouter.use('/heroes', heroesRouter);
 apiRouter.use('/outfit', outfitRouter);

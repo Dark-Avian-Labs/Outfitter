@@ -1,6 +1,11 @@
 import Tesseract from 'tesseract.js';
 
 import {
+  parseArtifactOcr,
+  type ArtifactCatalogRef,
+  type ParsedArtifactOcr,
+} from '../../shared/artifactOcr.js';
+import {
   parseGearOcr,
   mergeGearOcr,
   type OcrHeroRef,
@@ -92,6 +97,44 @@ export async function closeOcrWorker(): Promise<void> {
   const worker = await workerPromise;
   await worker.terminate();
   workerPromise = null;
+}
+
+function mergeArtifactOcr(base: ParsedArtifactOcr, extra: ParsedArtifactOcr): ParsedArtifactOcr {
+  return {
+    catalog_slug: base.catalog_slug ?? extra.catalog_slug,
+    level: base.level ?? extra.level,
+    promotion: base.promotion ?? extra.promotion,
+    hp_base: base.hp_base ?? extra.hp_base,
+    hp_bonus: base.hp_bonus ?? extra.hp_bonus,
+    atk_base: base.atk_base ?? extra.atk_base,
+    atk_bonus: base.atk_bonus ?? extra.atk_bonus,
+    secondary_stat: base.secondary_stat ?? extra.secondary_stat,
+    secondary_value: base.secondary_value ?? extra.secondary_value,
+  };
+}
+
+export async function recognizeArtifactStats(
+  image: Buffer,
+  catalog: readonly ArtifactCatalogRef[] = [],
+): Promise<{ text: string } & ParsedArtifactOcr> {
+  const worker = await getWorker();
+  async function pass(psm: Tesseract.PSM): Promise<{ text: string } & ParsedArtifactOcr> {
+    await worker.setParameters({
+      tessedit_char_whitelist: CHAR_WHITELIST + '/',
+      tessedit_pageseg_mode: psm,
+    });
+    const text = (await worker.recognize(image)).data.text ?? '';
+    return { text, ...parseArtifactOcr(text, catalog) };
+  }
+  const column = await pass(Tesseract.PSM.SINGLE_COLUMN);
+  const block = await pass(Tesseract.PSM.SINGLE_BLOCK);
+  const merged = { text: `${column.text}\n${block.text}`, ...mergeArtifactOcr(column, block) };
+  if (merged.hp_base != null && merged.atk_base != null && merged.catalog_slug) return merged;
+  const sparse = await pass(Tesseract.PSM.SPARSE_TEXT);
+  return {
+    text: `${merged.text}\n${sparse.text}`,
+    ...mergeArtifactOcr(merged, sparse),
+  };
 }
 
 export async function recognizeGearStats(

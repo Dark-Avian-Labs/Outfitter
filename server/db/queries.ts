@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 
 import type {
+  ArtifactSecondaryStat,
   FactionKey,
   GearPrefix,
   GearSlot,
@@ -429,13 +430,217 @@ export function catalogHeroCount(db: Database.Database): number {
   return row.n;
 }
 
-export function catalogStatus(db: Database.Database): { heroes: number; missingStats: number } {
-  const row = db
+export function catalogArtifactCount(db: Database.Database): number {
+  const row = db.prepare(`SELECT COUNT(*) AS n FROM catalog_artifacts`).get() as { n: number };
+  return row.n;
+}
+
+export function catalogStatus(db: Database.Database): {
+  heroes: number;
+  artifacts: number;
+  missingStats: number;
+} {
+  const heroes = db
     .prepare(
       `SELECT COUNT(*) AS heroes,
               SUM(CASE WHEN base_hp = 0 AND base_atk = 0 THEN 1 ELSE 0 END) AS missingStats
          FROM catalog_heroes`,
     )
     .get() as { heroes: number; missingStats: number | null };
-  return { heroes: row.heroes, missingStats: row.missingStats ?? 0 };
+  return {
+    heroes: heroes.heroes,
+    artifacts: catalogArtifactCount(db),
+    missingStats: heroes.missingStats ?? 0,
+  };
+}
+
+export type CatalogArtifactRow = {
+  slug: string;
+  name: string;
+  class: HeroClassKey | null;
+  rarity: string;
+  star_rating: number;
+  exclusive_hero_slug: string | null;
+  is_universal: number;
+  portrait_path: string | null;
+  display_order: number;
+  exclusive_hero_name: string | null;
+  exclusive_hero_portrait: string | null;
+};
+
+export type ArtifactPieceRow = {
+  id: number;
+  account_id: number;
+  catalog_slug: string;
+  name: string;
+  class: HeroClassKey | null;
+  rarity: string;
+  star_rating: number;
+  exclusive_hero_slug: string | null;
+  is_universal: number;
+  portrait_path: string | null;
+  level: number;
+  promotion: number;
+  hp_base: number;
+  hp_bonus: number;
+  atk_base: number;
+  atk_bonus: number;
+  secondary_stat: ArtifactSecondaryStat | null;
+  secondary_value: number | null;
+  equipped_hero_slug: string | null;
+  equipped_hero_name: string | null;
+  equipped_hero_portrait: string | null;
+  exclusive_hero_name: string | null;
+  exclusive_hero_portrait: string | null;
+};
+
+function artifactSelectSql(): string {
+  return `SELECT
+      a.id, a.account_id, a.catalog_slug, a.level, a.promotion,
+      a.hp_base, a.hp_bonus, a.atk_base, a.atk_bonus,
+      a.secondary_stat, a.secondary_value, a.equipped_hero_slug,
+      c.name, c.class, c.rarity, c.star_rating, c.exclusive_hero_slug,
+      c.is_universal, c.portrait_path,
+      eh.name AS equipped_hero_name,
+      eh.portrait_path AS equipped_hero_portrait,
+      xh.name AS exclusive_hero_name,
+      xh.portrait_path AS exclusive_hero_portrait
+    FROM artifact_pieces a
+    INNER JOIN catalog_artifacts c ON c.slug = a.catalog_slug
+    LEFT JOIN catalog_heroes eh ON eh.slug = a.equipped_hero_slug
+    LEFT JOIN catalog_heroes xh ON xh.slug = c.exclusive_hero_slug`;
+}
+
+export function listCatalogArtifacts(db: Database.Database): CatalogArtifactRow[] {
+  return db
+    .prepare(
+      `SELECT
+         c.slug, c.name, c.class, c.rarity, c.star_rating, c.exclusive_hero_slug,
+         c.is_universal, c.portrait_path, c.display_order,
+         xh.name AS exclusive_hero_name,
+         xh.portrait_path AS exclusive_hero_portrait
+       FROM catalog_artifacts c
+       LEFT JOIN catalog_heroes xh ON xh.slug = c.exclusive_hero_slug
+       WHERE c.active = 1
+       ORDER BY c.display_order ASC, c.name ASC`,
+    )
+    .all() as CatalogArtifactRow[];
+}
+
+export function listArtifactNames(db: Database.Database): { slug: string; name: string }[] {
+  return db.prepare(`SELECT slug, name FROM catalog_artifacts WHERE active = 1`).all() as {
+    slug: string;
+    name: string;
+  }[];
+}
+
+export function listArtifacts(db: Database.Database, accountId: number): ArtifactPieceRow[] {
+  return db
+    .prepare(`${artifactSelectSql()} WHERE a.account_id = ? ORDER BY c.name ASC, a.id ASC`)
+    .all(accountId) as ArtifactPieceRow[];
+}
+
+export function getArtifact(
+  db: Database.Database,
+  accountId: number,
+  artifactId: number,
+): ArtifactPieceRow | undefined {
+  return db
+    .prepare(`${artifactSelectSql()} WHERE a.account_id = ? AND a.id = ?`)
+    .get(accountId, artifactId) as ArtifactPieceRow | undefined;
+}
+
+export function getEquippedArtifact(
+  db: Database.Database,
+  accountId: number,
+  heroSlug: string,
+): ArtifactPieceRow | undefined {
+  return db
+    .prepare(`${artifactSelectSql()} WHERE a.account_id = ? AND a.equipped_hero_slug = ?`)
+    .get(accountId, heroSlug) as ArtifactPieceRow | undefined;
+}
+
+export type ArtifactWrite = {
+  catalog_slug: string;
+  level: number;
+  promotion: number;
+  hp_base: number;
+  hp_bonus: number;
+  atk_base: number;
+  atk_bonus: number;
+  secondary_stat: ArtifactSecondaryStat | null;
+  secondary_value: number | null;
+};
+
+export function insertArtifact(
+  db: Database.Database,
+  accountId: number,
+  write: ArtifactWrite,
+): number {
+  const result = db
+    .prepare(
+      `INSERT INTO artifact_pieces (
+         account_id, catalog_slug, level, promotion,
+         hp_base, hp_bonus, atk_base, atk_bonus, secondary_stat, secondary_value
+       ) VALUES (
+         @account_id, @catalog_slug, @level, @promotion,
+         @hp_base, @hp_bonus, @atk_base, @atk_bonus, @secondary_stat, @secondary_value
+       )`,
+    )
+    .run({ account_id: accountId, ...write });
+  return Number(result.lastInsertRowid);
+}
+
+export function updateArtifact(
+  db: Database.Database,
+  accountId: number,
+  artifactId: number,
+  write: ArtifactWrite,
+): void {
+  const result = db
+    .prepare(
+      `UPDATE artifact_pieces SET
+         catalog_slug = @catalog_slug, level = @level, promotion = @promotion,
+         hp_base = @hp_base, hp_bonus = @hp_bonus, atk_base = @atk_base, atk_bonus = @atk_bonus,
+         secondary_stat = @secondary_stat, secondary_value = @secondary_value
+       WHERE id = @id AND account_id = @account_id`,
+    )
+    .run({ id: artifactId, account_id: accountId, ...write });
+  if (result.changes === 0) throw new Error('Artifact not found');
+}
+
+export function deleteArtifact(db: Database.Database, accountId: number, artifactId: number): void {
+  const result = db
+    .prepare(`DELETE FROM artifact_pieces WHERE id = ? AND account_id = ?`)
+    .run(artifactId, accountId);
+  if (result.changes === 0) throw new Error('Artifact not found');
+}
+
+export function equipArtifact(
+  db: Database.Database,
+  accountId: number,
+  heroSlug: string,
+  artifactId: number | null,
+): void {
+  const transaction = db.transaction(() => {
+    db.prepare(
+      `UPDATE artifact_pieces SET equipped_hero_slug = NULL
+        WHERE account_id = ? AND equipped_hero_slug = ?`,
+    ).run(accountId, heroSlug);
+    if (artifactId == null) return;
+    db.prepare(
+      `UPDATE artifact_pieces SET equipped_hero_slug = NULL
+        WHERE account_id = ? AND id = ?`,
+    ).run(accountId, artifactId);
+    const result = db
+      .prepare(
+        `UPDATE artifact_pieces SET equipped_hero_slug = ?
+          WHERE id = ? AND account_id = ?`,
+      )
+      .run(heroSlug, artifactId, accountId);
+    if (result.changes === 0) {
+      throw Object.assign(new Error('Artifact not found'), { status: 404, expose: true });
+    }
+  });
+  transaction();
 }
