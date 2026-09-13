@@ -2362,6 +2362,10 @@ html .gear-hover-card.glass-surface {
   font-weight: 600;
 }
 
+.gear-main-bonus {
+  color: var(--color-success);
+}
+
 .gear-hover-card .stat-gauge {
   min-width: 0;
 }

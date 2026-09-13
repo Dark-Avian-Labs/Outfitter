@@ -10,6 +10,7 @@ import {
   HERO_CLASSES,
   SLOT_LABELS,
   artifactRarityColor,
+  formatMainStatText,
   formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
@@ -40,7 +41,14 @@ import { AccountBar } from './AccountBar';
 import { ArtifactFormModal, type ArtifactDraft } from './ArtifactFormModal';
 import { FieldSelect } from './FieldSelect';
 import { GearFormModal, type GearDraft } from './GearFormModal';
-import { EmptySlotTile, GearTile, StatGauge, gearSubstats, type GearView } from './GearTile';
+import {
+  EmptySlotTile,
+  GearMainStat,
+  GearTile,
+  StatGauge,
+  gearSubstats,
+  type GearView,
+} from './GearTile';
 import { RerollTab } from './RerollTab';
 import type { ArtifactView, CatalogArtifact, GameAccount, HeroRow, OutfitResult } from './types';
 import {
@@ -113,8 +121,11 @@ function GearPieceCard({ piece, slot }: { piece: GearView | undefined; slot: Gea
           <div className="gear-piece-card__slot">{SLOT_LABELS[slot]}</div>
           {piece ? (
             <div className="gear-piece-card__main">
-              {GEAR_STAT_LABELS[piece.main_stat]}{' '}
-              {formatStatValue(piece.main_stat, piece.main_value + piece.main_bonus)}
+              <GearMainStat
+                stat={piece.main_stat}
+                value={piece.main_value}
+                bonus={piece.main_bonus}
+              />
             </div>
           ) : (
             <div className="text-muted text-xs">Empty</div>
@@ -465,6 +476,7 @@ export function OutfitterPage() {
       ...draft,
       exclusive_hero_slug: draft.exclusive_hero_slug || null,
       exclusive_faction: draft.exclusive_faction || null,
+      equipped_hero_slug: draft.equipped_hero_slug || null,
     };
     const response = await apiFetch(editingGear ? `/api/gear/${editingGear.id}` : '/api/gear', {
       method: editingGear ? 'PATCH' : 'POST',
@@ -784,10 +796,11 @@ export function OutfitterPage() {
                 <tbody>
                   {filteredGear.map((piece) => {
                     const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
-                    const mainLabel = `${GEAR_STAT_LABELS[piece.main_stat]} ${formatStatValue(
+                    const mainLabel = formatMainStatText(
                       piece.main_stat,
-                      piece.main_value + piece.main_bonus,
-                    )}`;
+                      piece.main_value,
+                      piece.main_bonus,
+                    );
                     const illegalLabels = outOfRangeGearLabels(piece);
                     const rating = rateGear(piece);
                     return (
@@ -813,7 +826,11 @@ export function OutfitterPage() {
                           {setName}
                         </td>
                         <td className="col-main" title={mainLabel}>
-                          {mainLabel}
+                          <GearMainStat
+                            stat={piece.main_stat}
+                            value={piece.main_value}
+                            bonus={piece.main_bonus}
+                          />
                         </td>
                         <td className="stats-col">
                           <div className="flex flex-col gap-1">

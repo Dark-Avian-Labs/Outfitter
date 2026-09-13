@@ -311,6 +311,21 @@ export function formatStatValue(stat: GearStatKey, value: number): string {
   return trimNumber(value);
 }
 
+export function formatMainStatLabel(
+  stat: GearStatKey,
+  value: number,
+  bonus = 0,
+): { main: string; bonus: string | null } {
+  const main = `${GEAR_STAT_LABELS[stat]} ${formatStatValue(stat, value)}`;
+  if (bonus <= 0) return { main, bonus: null };
+  return { main, bonus: `+${formatStatValue(stat, bonus)}` };
+}
+
+export function formatMainStatText(stat: GearStatKey, value: number, bonus = 0): string {
+  const parts = formatMainStatLabel(stat, value, bonus);
+  return parts.bonus ? `${parts.main} ${parts.bonus}` : parts.main;
+}
+
 export function trimNumber(value: number): string {
   if (Number.isInteger(value)) return String(value);
   return String(Math.round(value * 10) / 10);

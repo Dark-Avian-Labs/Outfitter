@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   artifactRarityColor,
+  formatMainStatText,
   gaugeColor,
   gaugeRatio,
   gearHasOutOfRangeStats,
@@ -51,6 +52,11 @@ describe('gearHasOutOfRangeStats', () => {
 
   it('accepts a +16 ATK Speed amulet main of 220', () => {
     expect(gearHasOutOfRangeStats({ ...legal, main_stat: 'atkSpd', main_value: 220, main_bonus: 0 })).toBe(false);
+  });
+
+  it('accepts a fractional percent gem bonus under the cap', () => {
+    expect(gearHasOutOfRangeStats({ ...legal, main_value: 66, main_bonus: 1.2 })).toBe(false);
+    expect(gearHasOutOfRangeStats({ ...legal, main_value: 66, main_bonus: 5.1 })).toBe(true);
   });
 
   it('ignores empty sub slots', () => {
@@ -137,6 +143,14 @@ describe('artifact promotion', () => {
         secondary_value: null,
       }),
     ).toEqual(['HP', 'ATK']);
+  });
+});
+
+describe('formatMainStatText', () => {
+  it('keeps the gem bonus off the main value', () => {
+    expect(formatMainStatText('atkBonus', 66, 1.2)).toBe('ATK Bonus 66% +1.2%');
+    expect(formatMainStatText('atk', 1056, 80)).toBe('ATK 1056 +80');
+    expect(formatMainStatText('atkBonus', 66, 0)).toBe('ATK Bonus 66%');
   });
 });
 

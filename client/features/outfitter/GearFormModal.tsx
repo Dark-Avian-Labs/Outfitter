@@ -8,7 +8,6 @@ import {
   MAIN_STAT_BONUS_MAX,
   SLOT_LABELS,
   SLOT_MAIN_STATS,
-  formatStatValue,
   gearEmptySlotSrc,
   gearSetBadgeSrc,
   outOfRangeGearLabels,
@@ -59,6 +58,7 @@ export type GearDraft = {
   substats: { stat: GearStatKey; value: number }[];
   exclusive_hero_slug: string;
   exclusive_faction: string;
+  equipped_hero_slug: string;
 };
 
 function draftFromGear(gear: GearView | null): GearDraft {
@@ -93,6 +93,7 @@ function draftFromGear(gear: GearView | null): GearDraft {
     substats,
     exclusive_hero_slug: gear?.exclusive_hero_slug ?? '',
     exclusive_faction: gear?.exclusive_faction ?? '',
+    equipped_hero_slug: gear?.equipped_hero_slug ?? '',
   };
 }
 
@@ -381,15 +382,24 @@ export function GearFormModal({
                   }
                 />
               </label>
-              <FieldSelect
-                label="Bonus"
-                value={String(Math.min(draft.main_bonus, bonusMax))}
-                options={Array.from({ length: bonusMax + 1 }, (_, bonus) => ({
-                  value: String(bonus),
-                  label: bonus === 0 ? '0' : `+${formatStatValue(draft.main_stat, bonus)}`,
-                }))}
-                onChange={(bonus) => setDraft({ ...draft, main_bonus: Number(bonus) })}
-              />
+              <label className="form-group block">
+                <span>Bonus</span>
+                <input
+                  className={`form-input mt-1 w-full${
+                    illegalLabels.includes(`${GEAR_STAT_LABELS[draft.main_stat]} bonus`)
+                      ? ' form-input--illegal'
+                      : ''
+                  }`}
+                  type="number"
+                  min={0}
+                  max={bonusMax}
+                  step="any"
+                  value={draft.main_bonus}
+                  onChange={(event) =>
+                    setDraft({ ...draft, main_bonus: Number(event.target.value) })
+                  }
+                />
+              </label>
             </div>
             <div className="grid gap-3" ref={substatListRef}>
               {draft.substats.map((sub, index) => (
@@ -488,18 +498,34 @@ export function GearFormModal({
             A piece with the same type, set, and stats already exists. Save anyway to keep a copy.
           </p>
         ) : null}
-        <div className="modal-actions">
-          {onDelete ? (
-            <Button variant="danger" onClick={() => setConfirmDelete(true)}>
-              Delete
+        <div className="mt-6 flex items-end justify-between gap-3">
+          <FieldSelect
+            className="max-w-[16rem] min-w-[10rem] text-left"
+            label="Equipped"
+            value={draft.equipped_hero_slug}
+            options={[
+              { value: '', label: 'None' },
+              ...heroes.map((hero) => ({
+                value: hero.slug,
+                label: hero.name,
+                iconSrc: hero.portrait_path ?? undefined,
+              })),
+            ]}
+            onChange={(equipped_hero_slug) => setDraft({ ...draft, equipped_hero_slug })}
+          />
+          <div className="modal-actions mt-0">
+            {onDelete ? (
+              <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+                Delete
+              </Button>
+            ) : null}
+            <Button variant="cancel" onClick={onClose}>
+              Cancel
             </Button>
-          ) : null}
-          <Button variant="cancel" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="accent" disabled={ocrBusy} onClick={saveDraft}>
-            {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
-          </Button>
+            <Button variant="accent" disabled={ocrBusy} onClick={saveDraft}>
+              {duplicateWarned && duplicate ? 'Save copy anyway' : 'Save'}
+            </Button>
+          </div>
         </div>
       </Modal>
       <Modal
