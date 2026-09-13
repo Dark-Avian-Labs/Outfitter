@@ -362,6 +362,56 @@ export function deleteGear(db: Database.Database, accountId: number, gearId: num
   if (result.changes === 0) throw new Error('Gear not found');
 }
 
+export function equipGearSlot(
+  db: Database.Database,
+  accountId: number,
+  gearId: number,
+  heroSlug: string | null,
+): void {
+  const transaction = db.transaction(() => {
+    const piece = db
+      .prepare(`SELECT slot FROM gear_pieces WHERE id = ? AND account_id = ?`)
+      .get(gearId, accountId) as { slot: string } | undefined;
+    if (!piece) {
+      throw Object.assign(new Error('Gear piece not found'), { status: 404, expose: true });
+    }
+    if (heroSlug == null) {
+      db.prepare(
+        `UPDATE gear_pieces SET equipped_hero_slug = NULL WHERE id = ? AND account_id = ?`,
+      ).run(gearId, accountId);
+      return;
+    }
+    db.prepare(
+      `UPDATE gear_pieces SET equipped_hero_slug = NULL
+        WHERE account_id = ? AND equipped_hero_slug = ? AND slot = ? AND id != ?`,
+    ).run(accountId, heroSlug, piece.slot, gearId);
+    const result = db
+      .prepare(`UPDATE gear_pieces SET equipped_hero_slug = ? WHERE id = ? AND account_id = ?`)
+      .run(heroSlug, gearId, accountId);
+    if (result.changes === 0) {
+      throw Object.assign(new Error('Gear piece not found'), { status: 404, expose: true });
+    }
+  });
+  transaction();
+}
+
+export function updateGearWithEquip(
+  db: Database.Database,
+  accountId: number,
+  gearId: number,
+  write: GearWrite,
+  equippedHeroSlug: string | null,
+): void {
+  const transaction = db.transaction(() => {
+    db.prepare(
+      `UPDATE gear_pieces SET equipped_hero_slug = NULL WHERE id = ? AND account_id = ?`,
+    ).run(gearId, accountId);
+    updateGear(db, accountId, gearId, write);
+    equipGearSlot(db, accountId, gearId, equippedHeroSlug);
+  });
+  transaction();
+}
+
 export function saveLoadout(
   db: Database.Database,
   accountId: number,

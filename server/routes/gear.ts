@@ -53,7 +53,9 @@ function isGearStat(value: unknown): value is GearStatKey {
   return typeof value === 'string' && (GEAR_STAT_KEYS as readonly string[]).includes(value);
 }
 
-function parseGearBody(body: unknown): q.GearWrite | string {
+function parseGearBody(
+  body: unknown,
+): { write: q.GearWrite; equipped_hero_slug: string | null } | string {
   if (!body || typeof body !== 'object') return 'Invalid body.';
   const record = body as Record<string, unknown>;
   const slot = record.slot;
@@ -106,17 +108,34 @@ function parseGearBody(body: unknown): q.GearWrite | string {
   if (exclusiveHero && slot === 'ring') {
     return 'Hero exclusive is not valid on rings.';
   }
+  const equippedHero =
+    typeof record.equipped_hero_slug === 'string' && record.equipped_hero_slug.trim()
+      ? record.equipped_hero_slug.trim()
+      : null;
   return {
-    slot: slot as GearSlot,
-    set_key: setKey,
-    prefix: prefix as GearPrefix,
-    main_stat: mainStat,
-    main_value: mainValue,
-    main_bonus: mainBonus,
-    substats,
-    exclusive_hero_slug: exclusiveHero,
-    exclusive_faction: exclusiveFaction,
+    write: {
+      slot: slot as GearSlot,
+      set_key: setKey,
+      prefix: prefix as GearPrefix,
+      main_stat: mainStat,
+      main_value: mainValue,
+      main_bonus: mainBonus,
+      substats,
+      exclusive_hero_slug: exclusiveHero,
+      exclusive_faction: exclusiveFaction,
+    },
+    equipped_hero_slug: equippedHero,
   };
+}
+
+function requireEquippedHero(
+  db: ReturnType<typeof getAppDb>,
+  accountId: number,
+  slug: string | null,
+): string | null {
+  if (slug == null) return null;
+  if (!q.getHero(db, accountId, slug)) return 'Hero not found.';
+  return null;
 }
 
 gearRouter.get(
@@ -138,8 +157,18 @@ gearRouter.post(
       sendError(res, parsed);
       return;
     }
-    const id = q.insertGear(getAppDb(), accountId, parsed);
-    json(res, { gear: q.getGear(getAppDb(), accountId, id) }, 201);
+    const db = getAppDb();
+    const equippedError = requireEquippedHero(db, accountId, parsed.equipped_hero_slug);
+    if (equippedError) {
+      sendError(res, equippedError, 404);
+      return;
+    }
+    const id = db.transaction(() => {
+      const gearId = q.insertGear(db, accountId, parsed.write);
+      q.equipGearSlot(db, accountId, gearId, parsed.equipped_hero_slug);
+      return gearId;
+    })();
+    json(res, { gear: q.getGear(db, accountId, id) }, 201);
   }),
 );
 
@@ -163,7 +192,12 @@ gearRouter.patch(
       sendError(res, 'Gear piece not found.', 404);
       return;
     }
-    q.updateGear(db, accountId, gearId, parsed);
+    const equippedError = requireEquippedHero(db, accountId, parsed.equipped_hero_slug);
+    if (equippedError) {
+      sendError(res, equippedError, 404);
+      return;
+    }
+    q.updateGearWithEquip(db, accountId, gearId, parsed.write, parsed.equipped_hero_slug);
     json(res, { gear: q.getGear(db, accountId, gearId) });
   }),
 );

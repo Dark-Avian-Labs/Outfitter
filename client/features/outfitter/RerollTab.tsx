@@ -1,10 +1,10 @@
-import { formatStatValue, GEAR_STAT_LABELS, SLOT_LABELS, type GearStatKey } from '@shared/catalog';
+import { formatMainStatText, SLOT_LABELS, type GearStatKey } from '@shared/catalog';
 import { type GearRating, RANK_SCORE } from '@shared/gearRating';
 import { BULLION_ICON, REROLL_TOOLS, rerollActionLabel, suggestReroll } from '@shared/gearReroll';
 import { SET_BY_KEY } from '@shared/sets';
 import { useMemo } from 'react';
 
-import { GearTile, StatGauge, type GearView } from './GearTile';
+import { GearMainStat, GearTile, StatGauge, type GearView } from './GearTile';
 
 export function RerollTab({
   gear,
@@ -92,10 +92,11 @@ export function RerollTab({
                   <tbody>
                     {rows.map(({ piece, suggestion }) => {
                       const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
-                      const mainLabel = `${GEAR_STAT_LABELS[piece.main_stat]} ${formatStatValue(
+                      const mainLabel = formatMainStatText(
                         piece.main_stat,
-                        piece.main_value + piece.main_bonus,
-                      )}`;
+                        piece.main_value,
+                        piece.main_bonus,
+                      );
                       const dropsKeep =
                         suggestion.current.ruleName != null &&
                         suggestion.projected.ruleName == null;
@@ -124,7 +125,11 @@ export function RerollTab({
                             {setName}
                           </td>
                           <td className="col-main" title={mainLabel}>
-                            {mainLabel}
+                            <GearMainStat
+                              stat={piece.main_stat}
+                              value={piece.main_value}
+                              bonus={piece.main_bonus}
+                            />
                           </td>
                           <td className="stats-col">
                             <div className="flex flex-col gap-1">

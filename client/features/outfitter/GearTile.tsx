@@ -1,6 +1,8 @@
 import {
   FACTION_DISPLAY_NAMES,
   SLOT_LABELS,
+  formatMainStatLabel,
+  formatMainStatText,
   formatStatValue,
   gaugeColor,
   gaugeRatio,
@@ -174,10 +176,6 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
   const [pinned, setPinned] = useState(false);
   const [pos, setPos] = useState<TooltipPos | null>(null);
   const open = hovered || pinned;
-  const mainLabel = `${GEAR_STAT_LABELS[gear.main_stat]} ${formatStatValue(
-    gear.main_stat,
-    gear.main_value + gear.main_bonus,
-  )}`;
 
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -281,7 +279,13 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
                 <GearTileFace gear={gear} size={72} showEquipped />
               </div>
               <div className="gear-hover-card__stats">
-                <div className="gear-hover-card__main">{mainLabel}</div>
+                <div className="gear-hover-card__main">
+                  <GearMainStat
+                    stat={gear.main_stat}
+                    value={gear.main_value}
+                    bonus={gear.main_bonus}
+                  />
+                </div>
                 {gearSubstats(gear).map((entry, index) => (
                   <StatGauge key={`${gear.id}-${index}`} stat={entry.stat} value={entry.value} />
                 ))}
@@ -305,10 +309,7 @@ export function GearTile({
   showEquipped?: boolean;
   hover?: boolean;
 }) {
-  const mainLabel = `${GEAR_STAT_LABELS[gear.main_stat]} ${formatStatValue(
-    gear.main_stat,
-    gear.main_value + gear.main_bonus,
-  )}`;
+  const mainLabel = formatMainStatText(gear.main_stat, gear.main_value, gear.main_bonus);
   const face = (
     <div aria-label={`${setLabel(gear.set_key)}. ${mainLabel}`}>
       <GearTileFace gear={gear} size={size} showEquipped={showEquipped} />
@@ -316,6 +317,29 @@ export function GearTile({
   );
   if (!hover) return face;
   return <GearHoverCard gear={gear}>{face}</GearHoverCard>;
+}
+
+export function GearMainStat({
+  stat,
+  value,
+  bonus,
+}: {
+  stat: GearStatKey;
+  value: number;
+  bonus: number;
+}) {
+  const parts = formatMainStatLabel(stat, value, bonus);
+  return (
+    <>
+      {parts.main}
+      {parts.bonus ? (
+        <>
+          {' '}
+          <span className="gear-main-bonus">{parts.bonus}</span>
+        </>
+      ) : null}
+    </>
+  );
 }
 
 export function StatGauge({ stat, value }: { stat: GearStatKey; value: number }) {
