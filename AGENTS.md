@@ -33,7 +33,9 @@ Clerk login is required for inventory. Same instance as Codex/Armory (`apps.outf
 
 Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login. `APP_PUBLIC_BASE_URL` is required when Clerk is configured; `ALLOWED_APP_ORIGINS` lists sibling apps for Clerk `authorizedParties` and CSRF origin checks. Keep `VITE_*` plaintext. Session token must include `"metadata": "{{user.public_metadata}}"`.
 
-Empty keys are fine outside production: `isClerkConfigured()` skips Clerk and treats every request as signed out (Vitest and Playwright rely on this). Placeholder keys (`pk_test_placeholder` / `sk_test_placeholder`) are fatal at boot — leave both keys empty instead of faking values. Signed-in Playwright is later: decrypt `.env.development` and use a dedicated CI Clerk user (testing tokens). Do not invent local fake keys.
+Empty keys are fine outside production: `isClerkConfigured()` skips Clerk and treats every request as signed out (Vitest and Playwright rely on this). Placeholder keys (`pk_test_placeholder` / `sk_test_placeholder`) are fatal at boot. Leave both keys empty instead of faking values.
+
+Cursor agents sign in with Clerk Agent Tasks. Do not type a password. Decrypt `.env.development` and read `E2E_CLERK_USER_EMAIL` or `E2E_CLERK_USER_ID`. POST `https://api.clerk.com/v1/agents/tasks` using `CLERK_SECRET_KEY`. Send `agent_name`, `task_description`, `permissions` `*`, `redirect_url` `http://localhost:5174/`, and `on_behalf_of` with `user_id` or `identifier`. Open the URL Clerk returns. The same development user works for AppBase, Codex, Armory, BudgetPlanner, and Outfitter. Local cookies are host-only, so each app origin needs its own task. Do not invent local fake keys.
 
 ## Gear and optimizer
 
