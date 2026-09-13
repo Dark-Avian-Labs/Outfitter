@@ -175,7 +175,7 @@ function ArtifactPortrait({
   starRating?: number;
 }) {
   const filled = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
-  const pip = Math.max(5, Math.min(Math.round(size * 0.17), Math.floor((size - 14) / 5.8)));
+  const pip = Math.max(5, Math.floor((size - 2) / 5));
   const color = artifactRarityColor(rarity, starRating);
   return (
     <div
