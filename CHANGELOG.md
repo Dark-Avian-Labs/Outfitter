@@ -55,3 +55,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.15.0** `feat(artifacts)` [#50](https://github.com/Dark-Avian-Labs/Outfitter/pull/50): parse bonus-less OCR and show promotion pips
 - **v1.16.0** `feat(artifacts)` [#51](https://github.com/Dark-Avian-Labs/Outfitter/pull/51): border tiles, enlarge pips, and sort by name
 - **v1.17.0** `feat(artifacts)` [#52](https://github.com/Dark-Avian-Labs/Outfitter/pull/52): warn on duplicates and flag out-of-spec stats
+- **v1.18.0** `feat(artifacts)` [#53](https://github.com/Dark-Avian-Labs/Outfitter/pull/53): enlarge promotion pips with a faceted outline
