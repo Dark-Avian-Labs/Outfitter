@@ -57,3 +57,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.17.0** `feat(artifacts)` [#52](https://github.com/Dark-Avian-Labs/Outfitter/pull/52): warn on duplicates and flag out-of-spec stats
 - **v1.18.0** `feat(artifacts)` [#53](https://github.com/Dark-Avian-Labs/Outfitter/pull/53): enlarge promotion pips with a faceted outline
 - **v1.19.0** `feat(gear)` [#55](https://github.com/Dark-Avian-Labs/Outfitter/pull/55): show gem bonus separately and equip from the editor
+- **v1.19.1** `chore` [#56](https://github.com/Dark-Avian-Labs/Outfitter/pull/56): fix/quiet api request logs
