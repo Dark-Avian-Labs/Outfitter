@@ -11,7 +11,6 @@ type CatalogStatus = {
 
 type ImportSummary = CatalogStatus & {
   portraitsCopied: number;
-  iconsCopied: number;
 };
 
 export function AdminPage() {
@@ -83,8 +82,7 @@ export function AdminPage() {
       </dl>
       {lastImport ? (
         <p className="text-muted mt-3 text-sm">
-          Last sync copied {lastImport.portraitsCopied} portraits and {lastImport.iconsCopied}{' '}
-          icons.
+          Last sync copied {lastImport.portraitsCopied} portraits.
         </p>
       ) : null}
       {error ? <p className="mt-3 text-sm text-[var(--color-danger)]">{error}</p> : null}

@@ -51,13 +51,7 @@ import {
 } from './GearTile';
 import { RerollTab } from './RerollTab';
 import type { ArtifactView, CatalogArtifact, GameAccount, HeroRow, OutfitResult } from './types';
-import {
-  STAR_ICONS,
-  WorIconWithFallback,
-  classIconUrls,
-  factionIconUrls,
-  renderStars,
-} from './worIcons';
+import { STAR_ICONS, WorIcon, classIconSrc, factionIconSrc, renderStars } from './worIcons';
 
 type Tab = 'gear' | 'artifacts' | 'reroll' | 'equipment' | 'outfit';
 
@@ -951,10 +945,9 @@ export function OutfitterPage() {
                               title={row.exclusive_hero_name ?? undefined}
                             />
                           ) : row.class ? (
-                            <WorIconWithFallback
+                            <WorIcon
                               className="invert-on-light mx-auto"
-                              primarySrc={classIconUrls(row.class).primary}
-                              fallbackSrc={classIconUrls(row.class).fallback}
+                              src={classIconSrc(row.class)}
                               alt={CLASS_DISPLAY_NAMES[row.class] ?? row.class}
                               size={28}
                             />
@@ -1026,10 +1019,9 @@ export function OutfitterPage() {
                   label={CLASS_DISPLAY_NAMES[heroClass]}
                   onClick={() => setClassFilter((previous) => cycleTriFilter(previous, heroClass))}
                 >
-                  <WorIconWithFallback
+                  <WorIcon
                     className="invert-on-light"
-                    primarySrc={classIconUrls(heroClass).primary}
-                    fallbackSrc={classIconUrls(heroClass).fallback}
+                    src={classIconSrc(heroClass)}
                     alt={CLASS_DISPLAY_NAMES[heroClass]}
                     size={24}
                   />
@@ -1067,10 +1059,8 @@ export function OutfitterPage() {
                   label={FACTION_DISPLAY_NAMES[faction]}
                   onClick={() => setFactionFilter((previous) => cycleTriFilter(previous, faction))}
                 >
-                  <WorIconWithFallback
-                    className="invert-on-light"
-                    primarySrc={factionIconUrls(faction).primary}
-                    fallbackSrc={factionIconUrls(faction).fallback}
+                  <WorIcon
+                    src={factionIconSrc(faction)}
                     alt={FACTION_DISPLAY_NAMES[faction]}
                     size={24}
                   />
