@@ -5,7 +5,6 @@ import Database from 'better-sqlite3';
 
 import { CODEX_WOR_DB_PATH, CODEX_WOR_IMAGES_DIR, HERO_IMAGES_DIR } from '../config.js';
 import { getAppDb } from '../db/appDb.js';
-import { writeTacticianClassIconSvg } from './tacticianIcon.js';
 
 type CodexHeroRow = {
   slug: string;
@@ -45,7 +44,6 @@ export type CatalogImportSummary = {
   heroes: number;
   artifacts: number;
   portraitsCopied: number;
-  iconsCopied: number;
   missingStats: number;
 };
 
@@ -59,21 +57,6 @@ function copyIfExists(fromPath: string, toPath: string): boolean {
   fs.mkdirSync(path.dirname(toPath), { recursive: true });
   fs.copyFileSync(fromPath, toPath);
   return true;
-}
-
-function copyIconTree(kind: 'classes' | 'factions'): number {
-  const fromDir = path.join(CODEX_WOR_IMAGES_DIR, 'icons', kind);
-  const toDir = path.join(HERO_IMAGES_DIR, 'icons', kind);
-  if (!fs.existsSync(fromDir)) return 0;
-  fs.mkdirSync(toDir, { recursive: true });
-  let copied = 0;
-  for (const file of fs.readdirSync(fromDir)) {
-    const from = path.join(fromDir, file);
-    if (!fs.statSync(from).isFile()) continue;
-    fs.copyFileSync(from, path.join(toDir, file));
-    copied += 1;
-  }
-  return copied;
 }
 
 function tableColumns(source: Database.Database, table: string): Set<string> {
@@ -301,13 +284,10 @@ export function importCodexCatalog(): CatalogImportSummary {
   });
   transaction();
 
-  const iconsCopied = copyIconTree('classes') + copyIconTree('factions');
-  writeTacticianClassIconSvg();
   return {
     heroes: heroes.length,
     artifacts: artifacts.length,
     portraitsCopied,
-    iconsCopied,
     missingStats,
   };
 }

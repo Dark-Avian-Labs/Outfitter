@@ -19,7 +19,7 @@ Two SQLite files. Do not point them at the same path, and do not reuse Codex, Ar
 | App     | `APP_DB_PATH`     | Accounts, catalog copy, gear, artifacts, loadouts. |
 | Session | `SESSION_DB_PATH` | Express sessions / CSRF, active account.           |
 
-Hero portraits and class/faction icons live in `HERO_IMAGES_DIR` (served at `/hero-images`). They are copied from Codex on catalog import.
+Hero portraits live in `HERO_IMAGES_DIR` (served at `/hero-images`). They are copied from Codex on catalog import. Class, faction, and rank-star icons are bundled from `client/assets/wor/` (`classes/`, `factions/`, `ranks/`).
 
 ## Codex catalog
 

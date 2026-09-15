@@ -18,6 +18,8 @@ import { SET_BY_KEY } from '@shared/sets';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+import { factionIconSrc } from './worIcons';
+
 export type GearView = {
   id: number;
   slot: GearSlot;
@@ -125,16 +127,17 @@ function GearTileFace({
         : '';
   const fxStem =
     gear.prefix === 'variant' ? 'variant-fx' : gear.prefix === 'ancient' ? 'ancient-fx' : null;
+  const factionSrc = gear.exclusive_faction ? factionIconSrc(gear.exclusive_faction) : undefined;
   const overlay = gear.exclusive_hero_portrait ? (
     <img
       className="gear-tile__overlay gear-tile__overlay--tl"
       src={gear.exclusive_hero_portrait}
       alt={gear.exclusive_hero_name ?? 'Exclusive'}
     />
-  ) : gear.exclusive_faction ? (
+  ) : factionSrc ? (
     <img
       className="gear-tile__overlay gear-tile__overlay--tl"
-      src={`/hero-images/icons/factions/${gear.exclusive_faction}.svg`}
+      src={factionSrc}
       alt={FACTION_DISPLAY_NAMES[gear.exclusive_faction as FactionKey] ?? gear.exclusive_faction}
     />
   ) : null;

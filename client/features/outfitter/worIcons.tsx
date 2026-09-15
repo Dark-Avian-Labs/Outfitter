@@ -1,16 +1,35 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
-const STAR_MODULES = import.meta.glob('../../assets/wor/*.png', {
-  eager: true,
-  import: 'default',
-}) as Record<string, string>;
-
-export const STAR_ICONS: Record<string, string> = {};
-for (const [assetPath, src] of Object.entries(STAR_MODULES)) {
-  const file = assetPath.split('/').pop();
-  if (!file) continue;
-  STAR_ICONS[file.replace('.png', '')] = src;
+function assetStemMap(modules: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [assetPath, src] of Object.entries(modules)) {
+    const file = assetPath.split('/').pop();
+    if (!file) continue;
+    out[file.replace(/\.[^.]+$/, '')] = src;
+  }
+  return out;
 }
+
+export const STAR_ICONS = assetStemMap(
+  import.meta.glob('../../assets/wor/ranks/*.png', {
+    eager: true,
+    import: 'default',
+  }) as Record<string, string>,
+);
+
+const CLASS_ICONS = assetStemMap(
+  import.meta.glob('../../assets/wor/classes/*.svg', {
+    eager: true,
+    import: 'default',
+  }) as Record<string, string>,
+);
+
+const FACTION_ICONS = assetStemMap(
+  import.meta.glob('../../assets/wor/factions/*.svg', {
+    eager: true,
+    import: 'default',
+  }) as Record<string, string>,
+);
 
 export function starIconSrc(starRating: number, isLord = false): string | undefined {
   return STAR_ICONS[isLord ? 'star6' : `star${starRating}`];
@@ -29,40 +48,26 @@ export function renderStars(count?: number, iconKey?: string): ReactNode {
   );
 }
 
-export function classIconUrls(classKey: string): { primary: string; fallback: string } {
-  return {
-    primary: `/hero-images/icons/classes/${classKey}.svg`,
-    fallback: `/hero-images/icons/classes/${classKey}.png`,
-  };
+export function classIconSrc(classKey: string): string | undefined {
+  return CLASS_ICONS[classKey];
 }
 
-export function factionIconUrls(faction: string): { primary: string; fallback: string } {
-  return {
-    primary: `/hero-images/icons/factions/${faction}.svg`,
-    fallback: `/hero-images/icons/factions/${faction}.png`,
-  };
+export function factionIconSrc(faction: string): string | undefined {
+  return FACTION_ICONS[faction];
 }
 
-export function WorIconWithFallback({
-  primarySrc,
-  fallbackSrc,
+export function WorIcon({
+  src,
   alt,
   className,
   size = 24,
 }: {
-  primarySrc: string;
-  fallbackSrc: string;
+  src: string | undefined;
   alt: string;
   className?: string;
   size?: number;
 }) {
-  const [src, setSrc] = useState(primarySrc);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setSrc(primarySrc);
-    setFailed(false);
-  }, [primarySrc]);
-  if (failed) {
+  if (!src) {
     return (
       <span
         className={className}
@@ -72,21 +77,5 @@ export function WorIconWithFallback({
       />
     );
   }
-  return (
-    <img
-      className={className}
-      src={src}
-      alt={alt}
-      title={alt}
-      width={size}
-      height={size}
-      onError={() => {
-        if (src !== fallbackSrc) {
-          setSrc(fallbackSrc);
-          return;
-        }
-        setFailed(true);
-      }}
-    />
-  );
+  return <img className={className} src={src} alt={alt} title={alt} width={size} height={size} />;
 }
