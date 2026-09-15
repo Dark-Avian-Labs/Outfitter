@@ -183,11 +183,13 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   app.use('/api', (req, res, next) => {
     const startedAt = Date.now();
     res.on('finish', () => {
-      log(res.statusCode >= 500 ? 'error' : 'info', 'api_request', {
+      const status = res.statusCode;
+      if (status < 400) return;
+      log(status >= 500 ? 'error' : 'warn', 'api_request', {
         requestId: getRequestId(res),
         method: req.method,
         path: req.originalUrl,
-        status: res.statusCode,
+        status,
         durationMs: Date.now() - startedAt,
       });
     });
