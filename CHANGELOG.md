@@ -59,3 +59,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.19.0** `feat(gear)` [#55](https://github.com/Dark-Avian-Labs/Outfitter/pull/55): show gem bonus separately and equip from the editor
 - **v1.19.1** `chore` [#56](https://github.com/Dark-Avian-Labs/Outfitter/pull/56): fix/quiet api request logs
 - **v1.20.0** `chore` [#57](https://github.com/Dark-Avian-Labs/Outfitter/pull/57): feat/wor bundled icons
+- **v1.20.1** `chore(deps)` [#59](https://github.com/Dark-Avian-Labs/Outfitter/pull/59): Bump the production-dependencies group with 4 updates
