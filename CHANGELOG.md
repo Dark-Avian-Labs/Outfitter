@@ -60,3 +60,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.19.1** `chore` [#56](https://github.com/Dark-Avian-Labs/Outfitter/pull/56): fix/quiet api request logs
 - **v1.20.0** `chore` [#57](https://github.com/Dark-Avian-Labs/Outfitter/pull/57): feat/wor bundled icons
 - **v1.20.1** `chore(deps)` [#59](https://github.com/Dark-Avian-Labs/Outfitter/pull/59): Bump the production-dependencies group with 4 updates
+- **v1.20.2** `chore(deps)` [#61](https://github.com/Dark-Avian-Labs/Outfitter/pull/61): Bump @dotenvx/dotenvx in the production-dependencies group
