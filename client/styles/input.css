@@ -789,6 +789,7 @@ html.ui-acrylic:not(.dark) {
   .tabs {
     display: flex;
     gap: 4px;
+    width: 100%;
     margin-bottom: 16px;
     flex-wrap: wrap;
     background: var(--color-glass);

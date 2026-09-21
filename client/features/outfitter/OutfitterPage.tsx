@@ -653,8 +653,8 @@ export function OutfitterPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="tabs mb-0" role="tablist" aria-label="Outfitter tabs">
+      <div className="tabs items-center">
+        <div className="flex min-w-0 flex-wrap gap-1" role="tablist" aria-label="Outfitter tabs">
           {(['gear', 'artifacts', 'reroll', 'equipment', 'outfit'] as const).map((item) => (
             <button
               key={item}
@@ -669,7 +669,9 @@ export function OutfitterPage() {
             </button>
           ))}
         </div>
-        <AccountBar accounts={accounts} currentId={currentAccountId} onChange={reload} />
+        <div className="ml-auto">
+          <AccountBar accounts={accounts} currentId={currentAccountId} onChange={reload} />
+        </div>
       </div>
 
       {loadError ? <p className="mb-4 text-sm text-[var(--color-danger)]">{loadError}</p> : null}
