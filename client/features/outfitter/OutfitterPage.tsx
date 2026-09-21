@@ -654,12 +654,15 @@ export function OutfitterPage() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="tabs mb-0" role="tablist" aria-label="Outfitter tabs">
           {(['gear', 'artifacts', 'reroll', 'equipment', 'outfit'] as const).map((item) => (
             <button
               key={item}
+              id={`outfitter-tab-${item}`}
               type="button"
-              className={`header-link ${tab === item ? 'active' : ''}`}
+              role="tab"
+              className={`tab ${tab === item ? 'active' : ''}`}
+              aria-selected={tab === item}
               onClick={() => setTab(item)}
             >
               {item[0].toUpperCase() + item.slice(1)}
