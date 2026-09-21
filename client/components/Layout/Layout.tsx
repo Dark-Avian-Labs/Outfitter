@@ -109,10 +109,24 @@ export function Layout() {
       <AsciiWaveBackground />
       <header className="relative z-30 h-[100px] px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <Link to={APP_PATHS.home} className="brand-lockup w-fit">
-            <img src={feathers} alt="Dark Avian Labs feather mark" className="brand-lockup__icon" />
-            <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
-          </Link>
+          <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
+            <Link to={APP_PATHS.home} className="brand-lockup w-fit">
+              <img
+                src={feathers}
+                alt="Dark Avian Labs feather mark"
+                className="brand-lockup__icon"
+              />
+              <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
+            </Link>
+            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
+              <span
+                className="text-muted font-mono text-[10px] leading-none tracking-wide opacity-70"
+                title={`Client ${APP_VERSION}`}
+              >
+                v{APP_VERSION}
+              </span>
+            </div>
+          </div>
 
           <div className="justify-self-center" />
 
