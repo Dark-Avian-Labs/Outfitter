@@ -62,3 +62,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.20.1** `chore(deps)` [#59](https://github.com/Dark-Avian-Labs/Outfitter/pull/59): Bump the production-dependencies group with 4 updates
 - **v1.20.2** `chore(deps)` [#61](https://github.com/Dark-Avian-Labs/Outfitter/pull/61): Bump @dotenvx/dotenvx in the production-dependencies group
 - **v1.21.0** `chore` [#66](https://github.com/Dark-Avian-Labs/Outfitter/pull/66): chore/deps dotenvx pnpm
+- **v1.22.0** `chore` [#67](https://github.com/Dark-Avian-Labs/Outfitter/pull/67): feat/tab bar width and version
