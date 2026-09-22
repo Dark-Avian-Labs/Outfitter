@@ -66,3 +66,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.22.1** `ci(deps)` [#68](https://github.com/Dark-Avian-Labs/Outfitter/pull/68): Bump useblacksmith/checkout in the github-actions group
 - **v1.23.0** `chore` [#69](https://github.com/Dark-Avian-Labs/Outfitter/pull/69): feat/sentinel agent
 - **v1.24.0** `chore` [#70](https://github.com/Dark-Avian-Labs/Outfitter/pull/70): feat/dal app nav
+- **v1.24.1** `chore` [#71](https://github.com/Dark-Avian-Labs/Outfitter/pull/71): fix/dal app nav proxy
