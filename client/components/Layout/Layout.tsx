@@ -6,6 +6,7 @@ import { Link, Outlet } from 'react-router';
 import feathers from '../../../assets/feathers.png';
 import {
   APP_DISPLAY_NAME,
+  APP_ID,
   APP_VERSION,
   CLERK_ENABLED,
   LEGAL_ENTITY_NAME,
@@ -18,6 +19,7 @@ import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
+import { DalAppNav } from './DalAppNav';
 import { HexSideBackground } from './HexSideBackground';
 import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 
@@ -107,6 +109,7 @@ export function Layout() {
     <div className="flex min-h-screen flex-col">
       <HexSideBackground />
       <AsciiWaveBackground />
+      <DalAppNav currentAppId={APP_ID} />
       <header className="relative z-30 h-[100px] px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
