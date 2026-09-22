@@ -27,6 +27,7 @@ import {
 import { getAppDb } from './db/appDb.js';
 import { getSessionDb } from './db/connection.js';
 import { SqliteSessionStore } from './db/sqliteSessionStore.js';
+import { handleDalAppNavProxy } from './http/dalAppNavProxy.js';
 import { createAppHelmet } from './http/helmetCsp.js';
 import { getRequestId, requestIdMiddleware } from './http/requestId.js';
 import { log } from './logger.js';
@@ -224,6 +225,10 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   app.get('/api/version', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ version: APP_VERSION });
+  });
+
+  app.get('/api/dal-app-nav', (req, res) => {
+    void handleDalAppNavProxy(req, res);
   });
 
   app.use('/api', appApiLimiter, apiRouter);
