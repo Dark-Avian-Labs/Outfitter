@@ -4,7 +4,7 @@ import path from 'path';
 import type Database from 'better-sqlite3';
 import cookieParser from 'cookie-parser';
 import { csrfSync } from 'csrf-sync';
-import express from 'express';
+import express, { type RequestHandler } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 
@@ -41,6 +41,7 @@ export interface AppBundle {
 
 export interface CreateAppOptions {
   sessionDb?: Database.Database;
+  metricsMiddleware?: RequestHandler;
 }
 
 export function createApp(options: CreateAppOptions = {}): AppBundle {
@@ -57,6 +58,9 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use(createAppHelmet());
   app.use(requestIdMiddleware);
+  if (options.metricsMiddleware) {
+    app.use(options.metricsMiddleware);
+  }
 
   app.use('/api/gear/ocr', express.json({ limit: '5mb' }));
   app.use('/api/artifacts/ocr', express.json({ limit: '5mb' }));
