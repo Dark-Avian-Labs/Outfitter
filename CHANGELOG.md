@@ -67,3 +67,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.23.0** `chore` [#69](https://github.com/Dark-Avian-Labs/Outfitter/pull/69): feat/sentinel agent
 - **v1.24.0** `chore` [#70](https://github.com/Dark-Avian-Labs/Outfitter/pull/70): feat/dal app nav
 - **v1.24.1** `chore` [#71](https://github.com/Dark-Avian-Labs/Outfitter/pull/71): fix/dal app nav proxy
+- **v1.24.2** `chore(deps)` [#72](https://github.com/Dark-Avian-Labs/Outfitter/pull/72): Bump @dotenvx/dotenvx in the production-dependencies group
