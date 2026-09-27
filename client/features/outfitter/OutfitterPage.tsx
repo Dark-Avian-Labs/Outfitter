@@ -19,7 +19,7 @@ import {
   trimNumber,
   type GearSlot,
 } from '@shared/catalog';
-import { computeFinalStats, type FinalStats } from '@shared/formulas';
+import { BASE_CRIT_DMG, computeFinalStats, type FinalStats } from '@shared/formulas';
 import { GEAR_RANKS, KEEP_RULES, rateGear } from '@shared/gearRating';
 import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
@@ -76,7 +76,7 @@ function outfitResultStats(
       bonus: `+${Math.round(stats.atkSpdGear)}`,
     },
     { label: 'CC', base: '0', bonus: `+${stats.critRate.toFixed(1)}%` },
-    { label: 'CD', base: '0', bonus: `+${stats.critDmg.toFixed(1)}%` },
+    { label: 'CD', base: `${BASE_CRIT_DMG}%`, bonus: `+${stats.critDmg.toFixed(1)}%` },
     { label: 'HE', base: '0', bonus: `+${trimNumber(stats.healingEffect)}` },
     { label: 'RR', base: '0', bonus: `+${trimNumber(stats.rageRegen)}%` },
     {

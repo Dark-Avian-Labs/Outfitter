@@ -41,7 +41,7 @@ Cursor agents sign in with Clerk Agent Tasks. Do not type a password. Decrypt `.
 
 Mythic only, four substats. Main stat is a free number plus a 0–max gem bonus (see `MAIN_STAT_BONUS_MAX`). Substat gauges color by percent of max: grey / green / blue / purple / gold / red.
 
-ATK = `(base + every flat ATK) * (1 + every ATK%)`. Percents add. Glacier adds `0.06 * final HP` to ATK **after** that multiply, so ATK% does not apply to the Glacier chunk.
+HP, ATK, and DEF are `base * (1 + every percent) + every flat`. Percents add together and multiply the hero base only. Flats from gear and artifacts are added after, so a percent does not scale them. Glacier adds `0.06 * final HP` to ATK after that, so ATK% does not apply to the Glacier chunk. Crit damage starts at 150% on every hero. Gear adds on top.
 
 ATK Speed: inherent 100, gear adds on top. Interval `I = I0 * (0.28 + 0.72 * 200 / (200 + B))` where `B = totalAtkSpd - 100`. Display rounds to one decimal. Optimizer scores the attacks-per-second gain, not raw speed.
 

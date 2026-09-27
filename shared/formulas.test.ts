@@ -9,8 +9,15 @@ import {
 } from './formulas.js';
 
 describe('formulas', () => {
-  it('stacks flat then percent for ATK', () => {
-    expect(scaledStat(1000, 500, 155)).toBeCloseTo(3825);
+  it('applies percent to base, then adds flat', () => {
+    expect(scaledStat(1000, 500, 155)).toBeCloseTo(1000 * 2.55 + 500);
+  });
+
+  it('matches the Oren sheet for HP and ATK when percent does not scale flats', () => {
+    // Sheet from 2026-09-27. HP base is the catalog value. ATK base is his A3 sheet value.
+    // Skin and collection (+200 HP, +50 ATK) are left out.
+    expect(Math.round(scaledStat(21938, 10840, 23.5))).toBe(37933);
+    expect(Math.round(scaledStat(5772, 4360, 264.8))).toBe(25416);
   });
 
   it('applies diminishing attack interval and never drops below 28% of base', () => {
@@ -30,7 +37,7 @@ describe('formulas', () => {
   it('adds Glacier as 6% of final HP after ATK percent, not inside the flat bucket', () => {
     const bag = {
       flatHp: 0,
-      flatAtk: 0,
+      flatAtk: 1000,
       flatDef: 0,
       hpPct: 0,
       atkPct: 50,
@@ -58,6 +65,6 @@ describe('formulas', () => {
       bag,
     );
     expect(stats.hp).toBe(10000);
-    expect(stats.atk).toBe(2000 * 1.5 + 600);
+    expect(stats.atk).toBe(2000 * 1.5 + 1000 + 600);
   });
 });
