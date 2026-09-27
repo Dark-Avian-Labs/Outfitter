@@ -3,5 +3,9 @@ allowBuilds:
   esbuild: true
   tesseract.js: false
   unrs-resolver: true
+
 overrides:
   undici: ^8.10.2
+
+update:
+  githubActions: true
