@@ -88,8 +88,13 @@ export function addStatBags(left: StatBag, right: Partial<StatBag>): StatBag {
   };
 }
 
+const INHERENT_ATK_SPD = 100;
+const GLACIER_HP_RATIO = 0.06;
+export const BASE_CRIT_DMG = 150;
+
+// Percent multiplies the hero base only. Flats from gear and artifacts are added after.
 export function scaledStat(base: number, flat: number, percent: number): number {
-  return (base + flat) * (1 + percent / 100);
+  return base * (1 + percent / 100) + flat;
 }
 
 export function attackIntervalRaw(baseInterval: number, totalAtkSpd: number): number {
@@ -110,9 +115,6 @@ export function attacksPerSecond(baseInterval: number, totalAtkSpd: number): num
 export function healingMultiplier(healingEffect: number): number {
   return 1 + (1.5 * healingEffect) / (100 + healingEffect);
 }
-
-const INHERENT_ATK_SPD = 100;
-const GLACIER_HP_RATIO = 0.06;
 
 export type FinalStats = {
   hp: number;
