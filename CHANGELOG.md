@@ -70,3 +70,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.24.2** `chore(deps)` [#72](https://github.com/Dark-Avian-Labs/Outfitter/pull/72): Bump @dotenvx/dotenvx in the production-dependencies group
 - **v1.24.3** `fix(deps)` [#76](https://github.com/Dark-Avian-Labs/Outfitter/pull/76): bump dotenvx to 2.30.0 and load config via default export
 - **v1.24.4** `chore(deps)` [#77](https://github.com/Dark-Avian-Labs/Outfitter/pull/77): Bump the production-dependencies group across 1 directory with 2 updates
+- **v1.24.5** `chore` [#79](https://github.com/Dark-Avian-Labs/Outfitter/pull/79): fix/percent scales base only
