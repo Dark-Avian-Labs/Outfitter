@@ -25,7 +25,7 @@ const CLASS_ICONS = assetStemMap(
 );
 
 const FACTION_ICONS = assetStemMap(
-  import.meta.glob('../../assets/wor/factions/*.svg', {
+  import.meta.glob('../../assets/wor/factions/*.png', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,
