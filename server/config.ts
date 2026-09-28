@@ -168,7 +168,7 @@ export const HERO_IMAGES_DIR = resolveProjectPath(
 );
 export const CODEX_WOR_DB_PATH = resolveProjectPath(
   process.env.CODEX_WOR_DB_PATH,
-  path.join('..', 'Codex', 'data', 'wor.db'),
+  path.join('..', 'Codex', 'data', 'wor-catalog.db'),
 );
 export const CODEX_WOR_IMAGES_DIR = resolveProjectPath(
   process.env.CODEX_WOR_IMAGES_DIR,

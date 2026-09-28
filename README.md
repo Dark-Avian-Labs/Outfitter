@@ -22,7 +22,7 @@ Live: [outfitter.darkavianlabs.com](https://outfitter.darkavianlabs.com)
 
 ## Gotchas
 
-- Needs a populated Codex Watcher of Realms database at `CODEX_WOR_DB_PATH`. First boot copies the catalog when that path exists.
+- Needs a populated Codex Watcher of Realms **catalog** database at `CODEX_WOR_DB_PATH` (default `../Codex/data/wor-catalog.db`). First boot copies the catalog when that path exists.
 - App and session SQLite files must be different paths.
 
 ## License
