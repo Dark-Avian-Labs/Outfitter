@@ -73,3 +73,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.24.5** `chore` [#79](https://github.com/Dark-Avian-Labs/Outfitter/pull/79): fix/percent scales base only
 - **v1.25.0** `chore` [#80](https://github.com/Dark-Avian-Labs/Outfitter/pull/80): feat/wor grey blades
 - **v1.25.1** `chore` [#81](https://github.com/Dark-Avian-Labs/Outfitter/pull/81): fix/app nav rail windows
+- **v1.26.0** `chore` [#82](https://github.com/Dark-Avian-Labs/Outfitter/pull/82): feat/read wor catalog db
