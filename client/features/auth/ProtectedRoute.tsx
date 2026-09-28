@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 import { APP_PATHS } from '../../app/paths';
+import { AccountRequired } from './AccountRequired';
 import { useAuth } from './AuthContext';
+import { safeAuthRedirectPath } from './authRedirect';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -11,6 +13,10 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const { auth, refresh } = useAuth();
+  const location = useLocation();
+  const returnTo =
+    safeAuthRedirectPath(`${location.pathname}${location.search}${location.hash}`) ??
+    APP_PATHS.home;
 
   if (auth.status === 'loading') {
     return (
@@ -33,9 +39,9 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     );
   }
   if (auth.status !== 'authenticated') {
-    return <Navigate to={APP_PATHS.signIn} replace />;
+    return <AccountRequired returnTo={returnTo} />;
   }
-  if (requireAdmin && !auth.isAdmin) {
+  if (requireAdmin && auth.isAdmin !== true) {
     return (
       <div className="glass-panel mx-auto mt-16 max-w-md p-8 text-center" role="alert">
         <h1 className="text-lg font-semibold">Admin access required</h1>
