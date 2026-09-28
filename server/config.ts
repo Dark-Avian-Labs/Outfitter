@@ -148,7 +148,9 @@ export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN?.trim() || undefined;
 export const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME?.trim() || `${APP_ID}.sid`;
 export const APP_PUBLIC_BASE_URL = process.env.APP_PUBLIC_BASE_URL?.trim() || '';
 export const LEGAL_PAGE_URL =
-  process.env.LEGAL_PAGE_URL?.trim() || 'https://darkavianlabs.com/legal/';
+  process.env.LEGAL_PAGE_URL?.trim() ||
+  process.env.VITE_LEGAL_PAGE_URL?.trim() ||
+  'https://darkavianlabs.com/legal';
 
 function resolveProjectPath(configured: string | undefined, fallbackRelative: string): string {
   const value = configured?.trim();

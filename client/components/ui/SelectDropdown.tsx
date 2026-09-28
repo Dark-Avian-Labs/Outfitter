@@ -15,6 +15,7 @@ export interface SelectDropdownOption {
   value: string;
   label: string;
   iconSrc?: string;
+  swatchClass?: string;
 }
 
 function SelectOptionLabel({
@@ -27,6 +28,9 @@ function SelectOptionLabel({
   const label = option?.label ?? fallback;
   return (
     <>
+      {option?.swatchClass ? (
+        <span className={`account-swatch ${option.swatchClass}`} aria-hidden />
+      ) : null}
       {option?.iconSrc ? (
         <img src={option.iconSrc} alt="" className="select-dropdown-icon" />
       ) : null}
@@ -56,6 +60,7 @@ interface SelectDropdownProps {
   disabled?: boolean;
   triggerClassName?: string;
   placement?: 'attached' | 'floating';
+  preserveOrder?: boolean;
 }
 
 const MENU_GAP_PX = 4;
@@ -79,6 +84,7 @@ export function SelectDropdown({
   disabled,
   triggerClassName = DEFAULT_TRIGGER_CLASS_NAME,
   placement = 'attached',
+  preserveOrder = false,
 }: SelectDropdownProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -98,12 +104,13 @@ export function SelectDropdown({
   );
 
   const displayOptions = useMemo(() => {
+    if (preserveOrder) return options;
     const selectedIdx = options.findIndex((o) => o.value === value);
     if (selectedIdx < 0) return options;
     const selected = options[selectedIdx];
     const rest = options.filter((_, i) => i !== selectedIdx);
     return [selected, ...rest];
-  }, [options, value]);
+  }, [options, preserveOrder, value]);
 
   const updateMenuPosition = useCallback(() => {
     const btn = buttonRef.current;
@@ -166,8 +173,9 @@ export function SelectDropdown({
 
   useEffect(() => {
     if (!open) return;
-    setFocusedIndex(0);
-  }, [open, displayOptions]);
+    const selectedIdx = displayOptions.findIndex((option) => option.value === value);
+    setFocusedIndex(selectedIdx < 0 ? 0 : selectedIdx);
+  }, [displayOptions, open, value]);
 
   useEffect(() => {
     if (!open) return;

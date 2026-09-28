@@ -1,6 +1,6 @@
 import { buildClerkProfileAppearance } from '@/clerk';
 import { useClerk } from '@clerk/react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import feathers from '../../../assets/feathers.png';
@@ -13,9 +13,11 @@ import {
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
+import { ChunkErrorBoundary } from '../../components/ui/ChunkErrorBoundary';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Menu } from '../../components/ui/Menu';
 import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
+import { useRovingMenu } from '../../components/ui/useRovingMenu';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
@@ -32,7 +34,13 @@ function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: (
   if (!isLoggedIn) {
     return (
       <>
-        <Link to={APP_PATHS.signIn} className="user-menu-item" role="menuitem" onClick={onClose}>
+        <Link
+          to={APP_PATHS.signIn}
+          className="user-menu-item"
+          role="menuitem"
+          tabIndex={-1}
+          onClick={onClose}
+        >
           Sign in
         </Link>
         <div className="user-menu-divider" role="separator" />
@@ -47,6 +55,7 @@ function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: (
         type="button"
         className="user-menu-item text-left"
         role="menuitem"
+        tabIndex={-1}
         onClick={() => {
           onClose();
           clerk.openUserProfile({
@@ -59,7 +68,13 @@ function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: (
       <div className="user-menu-divider" role="separator" />
       <UiStyleSelector />
       {isAdmin ? (
-        <Link to={APP_PATHS.admin} className="user-menu-item" role="menuitem" onClick={onClose}>
+        <Link
+          to={APP_PATHS.admin}
+          className="user-menu-item"
+          role="menuitem"
+          tabIndex={-1}
+          onClick={onClose}
+        >
           Admin
         </Link>
       ) : null}
@@ -67,6 +82,7 @@ function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: (
         type="button"
         className="user-menu-item text-left"
         role="menuitem"
+        tabIndex={-1}
         onClick={() => {
           onClose();
           void clerk.signOut({ redirectUrl: APP_PATHS.home });
@@ -83,30 +99,15 @@ export function Layout() {
   const { auth } = useAuth();
   const currentYear = new Date().getFullYear();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const { menuRef, triggerRef, onMenuKeyDown } = useRovingMenu(userMenuOpen, setUserMenuOpen);
   const userMenuId = 'outfitter-user-menu';
-  const isAdmin = auth.status === 'authenticated' && auth.isAdmin;
-
-  useEffect(() => {
-    if (!userMenuOpen) return undefined;
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setUserMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [userMenuOpen]);
+  const isAdmin = auth.status === 'authenticated' && auth.isAdmin === true;
 
   return (
     <div className="flex min-h-screen flex-col">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <HexSideBackground />
       <AsciiWaveBackground />
       <DalAppNav currentAppId={APP_ID} />
@@ -149,6 +150,7 @@ export function Layout() {
             </button>
             <div ref={menuRef} className="relative">
               <button
+                ref={triggerRef}
                 type="button"
                 className="icon-toggle-btn"
                 aria-haspopup="menu"
@@ -161,7 +163,12 @@ export function Layout() {
               </button>
               {userMenuOpen ? (
                 <Menu>
-                  <div id={userMenuId} role="menu" aria-orientation="vertical">
+                  <div
+                    id={userMenuId}
+                    role="menu"
+                    aria-orientation="vertical"
+                    onKeyDown={onMenuKeyDown}
+                  >
                     {CLERK_ENABLED ? (
                       <ClerkUserMenuItems
                         isAdmin={isAdmin}
@@ -177,9 +184,19 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="relative z-0 flex-1 px-6 pb-6">
+      <main id="main-content" className="relative z-0 flex-1 px-6 pb-6">
         <div className="mx-auto w-full max-w-[2000px]">
-          <Outlet />
+          <ChunkErrorBoundary>
+            <Suspense
+              fallback={
+                <p className="text-muted py-6 text-sm" role="status">
+                  Loading...
+                </p>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </ChunkErrorBoundary>
         </div>
       </main>
       <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">

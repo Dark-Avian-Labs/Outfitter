@@ -1,72 +1,13 @@
 # Outfitter
 
-## Org standards
+Shell, auth, env, and validate are in AppBase `AGENTS.md`. Port 3004. Vite 5174. Playwright 3104.
 
-Shared Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, release tracks) live in AppBase [`docs/org-standards/`](../AppBase/docs/org-standards/). The design system (theme axes, glass contracts, UI primitives, Clerk appearance) lives in AppBase [`AGENTS.md`](../AppBase/AGENTS.md). There is no shared UI package: when you change layout, glass, buttons, or modals here, apply the same change in AppBase / Codex / Armory.
+Watcher of Realms gear optimizer. Hero identity and Lv.60 A0 stats are copied from Codex `CODEX_WOR_DB_PATH`, the read-only `wor-catalog.db`, when the local catalog is empty, from Admin, or from `pnpm run catalog:import`.
 
-## Overview
+`APP_DB_PATH` and `SESSION_DB_PATH` must be different files. Portraits copy into `HERO_IMAGES_DIR`.
 
-Outfitter is a Watcher of Realms gear inventory and loadout optimizer. Players store mythic pieces, build one loadout per hero, and search the stash for sets that hit stat floors.
+Account-specific stat edits live in `account_hero_stats`. One piece and one artifact equip on one hero. Saving an Outfit result unequips that hero's previous pieces and leaves the artifact. Include-equipped uses this hero's gear only.
 
-Default listen port is **3004**. Vite defaults to **5174**. See `README.md` for scripts and env.
+Stat math is `shared/formulas.ts`. Pieces are mythic, with four substats.
 
-## Databases
-
-Two SQLite files. Do not point them at the same path, and do not reuse Codex, Armory, or BudgetPlanner files.
-
-| File    | Env               | Role                                               |
-| ------- | ----------------- | -------------------------------------------------- |
-| App     | `APP_DB_PATH`     | Accounts, catalog copy, gear, artifacts, loadouts. |
-| Session | `SESSION_DB_PATH` | Express sessions / CSRF, active account.           |
-
-Hero portraits live in `HERO_IMAGES_DIR` (served at `/hero-images`). They are copied from Codex on catalog import. Class, faction, and rank-star icons are bundled from `client/assets/wor/` (`classes/`, `factions/`, `ranks/`).
-
-## Codex catalog
-
-Hero identity and Lv.60 A0 combat stats come from Codex's Watcher of Realms **catalog** DB (`CODEX_WOR_DB_PATH` → `wor-catalog.db`, read-only). Codex scrapes wiki infobox fields (`hp`, `atk`, `def`, `atkinterval`, `rr_auto`, `rr_attack`, `rr_attacked`) in the `fandomHeroStats` pipeline step and writes them there. Outfitter copies heroes and artifacts on boot if either catalog table is empty, from the Admin page (user menu, `apps.outfitter === 'admin'`), or via `POST /api/admin/import-catalog` / `pnpm run catalog:import`.
-
-If wiki stats are missing, hero bases are 0 until the user edits them on the Outfit tab. Edits persist per game account in `account_hero_stats`.
-
-## Auth
-
-Clerk login is required for inventory. Same instance as Codex/Armory (`apps.outfitter === 'admin'` for catalog import). Multiple WoR game accounts per Clerk user, same pattern as Codex. Loadouts are private.
-
-Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login. `APP_PUBLIC_BASE_URL` is required when Clerk is configured; `ALLOWED_APP_ORIGINS` lists sibling apps for Clerk `authorizedParties` and CSRF origin checks. Keep `VITE_*` plaintext. Session token must include `"metadata": "{{user.public_metadata}}"`.
-
-Empty keys are fine outside production: `isClerkConfigured()` skips Clerk and treats every request as signed out (Vitest and Playwright rely on this). Placeholder keys (`pk_test_placeholder` / `sk_test_placeholder`) are fatal at boot. Leave both keys empty instead of faking values.
-
-Cursor agents sign in with Clerk Agent Tasks. Do not type a password. Decrypt `.env.development` and read `E2E_CLERK_USER_EMAIL` or `E2E_CLERK_USER_ID`. POST `https://api.clerk.com/v1/agents/tasks` using `CLERK_SECRET_KEY`. Send `agent_name`, `task_description`, `permissions` `*`, `redirect_url` `http://localhost:5174/`, and `on_behalf_of` with `user_id` or `identifier`. Open the URL Clerk returns. The same development user works for AppBase, Codex, Armory, BudgetPlanner, and Outfitter. Local cookies are host-only, so each app origin needs its own task. Do not invent local fake keys.
-
-## Gear and optimizer
-
-Mythic only, four substats. Main stat is a free number plus a 0–max gem bonus (see `MAIN_STAT_BONUS_MAX`). Substat gauges color by percent of max: grey / green / blue / purple / gold / red.
-
-HP, ATK, and DEF are `base * (1 + every percent) + every flat`. Percents add together and multiply the hero base only. Flats from gear and artifacts are added after, so a percent does not scale them. Glacier adds `0.06 * final HP` to ATK after that, so ATK% does not apply to the Glacier chunk. Crit damage starts at 150% on every hero. Gear adds on top.
-
-ATK Speed: inherent 100, gear adds on top. Interval `I = I0 * (0.28 + 0.72 * 200 / (200 + B))` where `B = totalAtkSpd - 100`. Display rounds to one decimal. Optimizer scores the attacks-per-second gain, not raw speed.
-
-Healing Effect uses `1 + 1.5 * HE / (100 + HE)` for scoring. `% Rage Regen` does not increase Rage Regen (Auto).
-
-Add-gear accepts Ctrl+V of a Watcher of Realms gear screenshot. OCR only fills stat types and values (`server/ocr/`). If `server/ocr/tessdata/eng.traineddata` is missing, Tesseract.js fetches English data on first use and caches it under `data/tessdata`. Slot, set, prefix, and exclusives stay manual.
-
-In-game piece art and set badges live in `public/gear/` (from [prospector.gg/gearsets](https://prospector.gg/gearsets/)). Piece art already includes the set badge, so tiles do not overlay it. Standalone badges in `public/gear/sets/` are kept for later filter UI. Empty slot silhouettes are `public/gear/slots/{slot}.webp` (type filters, unequipped loadout slots, missing piece fallback).
-
-Add-artifact Ctrl+V fills catalog name, level (`+22/25`), HP/ATK base+bonus, and an optional secondary. Promotion is inferred from max level: 1–10 P0, 11–13 P1, 14–16 P2, 17–19 P3, 20–22 P4, 23–25 P5. The Outfit tab does not pick artifacts; assign them in Equipment.
-
-One piece can be equipped on one hero. One artifact can be equipped on one hero. One loadout per hero. Saving an Outfit result unequips that hero's previous pieces and leaves the artifact alone. "Include equipped" uses this hero's gear and never other heroes'. Force sets restricts the search to the chosen left/right sets.
-
-## Toolchain
-
-Node **26+**, pnpm **12.x**, exact `packageManager`. Encrypted env files need `DOTENV_PRIVATE_KEY_*` or `.env.keys`. `pnpm dev` decrypts `.env.development` with dotenvx (`--strict`) before spawning Vite and the API. `pnpm run validate` is the quality gate.
-
-On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
-
-## Tests
-
-`pnpm run validate` is the quality gate: preflight, oxfmt, oxlint, typecheck, Vitest. In CI that Vitest step is instrumented (`pnpm run test:coverage`); locally `pnpm test` stays uninstrumented. Use `pnpm run test:watch` while iterating.
-
-HTTP tests that need the real stack (health, CSRF, Helmet, `/api/version`) go through `createApp()` in `server/app.ts`. `server/index.ts` creates the app, optionally copies the Codex catalog if empty, then listens.
-
-Coverage includes `server/`, `client/utils/`, `shared/`, and `scripts/`.
-
-Playwright (`pnpm run test:e2e`) is **not** inside validate. It boots the compiled server (`dist/server/index.js`) on port 3104 with throwaway sqlite files and hits Chromium smokes (probes, CSRF, API 404, SPA when `dist/client` exists). Run `pnpm run build` first, and `pnpm run test:e2e:install` once per machine. The runner and browser downloads are Apache-2.0 / free; no cloud grid.
+OCR is `server/ocr/`. A missing `eng.traineddata` is fetched once into `data/tessdata`.

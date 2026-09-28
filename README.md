@@ -20,11 +20,6 @@ Paste a screenshot and it reads the rolls. Hero names and combat bases come from
 
 Live: [outfitter.darkavianlabs.com](https://outfitter.darkavianlabs.com)
 
-## Gotchas
-
-- Needs a populated Codex Watcher of Realms **catalog** database at `CODEX_WOR_DB_PATH` (default `../Codex/data/wor-catalog.db`). First boot copies the catalog when that path exists.
-- App and session SQLite files must be different paths.
-
 ## License
 
 MIT
