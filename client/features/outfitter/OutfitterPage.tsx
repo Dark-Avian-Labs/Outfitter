@@ -25,7 +25,7 @@ import { compareInventoryGear } from '@shared/gearSort';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { loadoutStatBag, type GearPieceInput } from '@shared/pieceStats';
 import { ALL_SETS, LEFT_SETS, RIGHT_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '../../components/ui/Button';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
@@ -323,6 +323,7 @@ export function OutfitterPage() {
   const [calcMessage, setCalcMessage] = useState<string | null>(null);
   const [calcProgress, setCalcProgress] = useState<number | null>(null);
   const [calcSearching, setCalcSearching] = useState(false);
+  const calcAbortRef = useRef<AbortController | null>(null);
   const [heroDraft, setHeroDraft] = useState<HeroRow | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -585,8 +586,17 @@ export function OutfitterPage() {
     await reload();
   }
 
+  function cancelCalculate(): void {
+    calcAbortRef.current?.abort();
+    calcAbortRef.current = null;
+    setCalcProgress(null);
+    setCalcSearching(false);
+  }
+
   async function calculate(): Promise<void> {
     if (!outfitHero || calcProgress != null) return;
+    const controller = new AbortController();
+    calcAbortRef.current = controller;
     setCalcMessage(null);
     setResults([]);
     setCalcProgress(0);
@@ -594,6 +604,7 @@ export function OutfitterPage() {
     try {
       const response = await apiFetch('/api/outfit/calculate', {
         method: 'POST',
+        signal: controller.signal,
         body: JSON.stringify({
           hero_slug: outfitHero,
           weights,
@@ -604,6 +615,7 @@ export function OutfitterPage() {
           include_equipped: includeEquipped,
         }),
       });
+      if (controller.signal.aborted) return;
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null;
         setCalcMessage(body?.error ?? 'Calculate failed');
@@ -613,6 +625,7 @@ export function OutfitterPage() {
         setCalcSearching(true);
         setCalcProgress(total > 0 ? done / total : 1);
       });
+      if (controller.signal.aborted) return;
       if (error) {
         setCalcMessage(error);
         return;
@@ -621,11 +634,17 @@ export function OutfitterPage() {
       if (next.length === 0) {
         setCalcMessage('No loadout matches. Relax mins, turn off Force sets, or add more gear.');
       }
-    } catch {
+    } catch (err: unknown) {
+      if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return;
+      }
       setCalcMessage('Calculate failed');
     } finally {
-      setCalcProgress(null);
-      setCalcSearching(false);
+      if (calcAbortRef.current === controller) {
+        calcAbortRef.current = null;
+        setCalcProgress(null);
+        setCalcSearching(false);
+      }
     }
   }
 
@@ -1425,7 +1444,7 @@ export function OutfitterPage() {
       </Modal>
       <Modal
         open={calcProgress != null}
-        onClose={() => undefined}
+        onClose={cancelCalculate}
         className="glass-modal-surface max-w-md"
         ariaLabelledBy="outfit-calc-title"
       >
@@ -1450,6 +1469,11 @@ export function OutfitterPage() {
           ) : (
             <div className="outfit-calc-progress__fill outfit-calc-progress__fill--busy" />
           )}
+        </div>
+        <div className="modal-actions">
+          <Button variant="cancel" onClick={cancelCalculate}>
+            Cancel
+          </Button>
         </div>
       </Modal>
     </div>
