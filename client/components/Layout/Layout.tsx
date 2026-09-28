@@ -1,6 +1,6 @@
 import { buildClerkProfileAppearance } from '@/clerk';
 import { useClerk } from '@clerk/react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import feathers from '../../../assets/feathers.png';
@@ -13,6 +13,7 @@ import {
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
+import { ChunkErrorBoundary } from '../../components/ui/ChunkErrorBoundary';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Menu } from '../../components/ui/Menu';
 import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
@@ -185,7 +186,17 @@ export function Layout() {
       </header>
       <main id="main-content" className="relative z-0 flex-1 px-6 pb-6">
         <div className="mx-auto w-full max-w-[2000px]">
-          <Outlet />
+          <ChunkErrorBoundary>
+            <Suspense
+              fallback={
+                <p className="text-muted py-6 text-sm" role="status">
+                  Loading...
+                </p>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </ChunkErrorBoundary>
         </div>
       </main>
       <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">

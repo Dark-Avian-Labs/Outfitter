@@ -1,15 +1,15 @@
 import { ClerkProvider } from '@clerk/react';
+import { Outlet } from 'react-router';
 
 import { CLERK_ENABLED, CLERK_PUBLISHABLE_KEY } from './app/config';
 import { APP_PATHS } from './app/paths';
-import { AppRoutes } from './app/routes';
 import { AuthProvider, DisabledAuthProvider } from './features/auth/AuthContext';
 
 export function App() {
   if (!CLERK_ENABLED) {
     return (
       <DisabledAuthProvider>
-        <AppRoutes />
+        <Outlet />
       </DisabledAuthProvider>
     );
   }
@@ -22,7 +22,7 @@ export function App() {
       afterSignOutUrl={APP_PATHS.home}
     >
       <AuthProvider>
-        <AppRoutes />
+        <Outlet />
       </AuthProvider>
     </ClerkProvider>
   );
