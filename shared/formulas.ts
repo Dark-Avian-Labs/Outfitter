@@ -92,7 +92,6 @@ const INHERENT_ATK_SPD = 100;
 const GLACIER_HP_RATIO = 0.06;
 export const BASE_CRIT_DMG = 150;
 
-// Percent multiplies the hero base only. Flats from gear and artifacts are added after.
 export function scaledStat(base: number, flat: number, percent: number): number {
   return base * (1 + percent / 100) + flat;
 }
