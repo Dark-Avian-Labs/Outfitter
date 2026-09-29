@@ -75,3 +75,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.25.1** `chore` [#81](https://github.com/Dark-Avian-Labs/Outfitter/pull/81): fix/app nav rail windows
 - **v1.26.0** `chore` [#82](https://github.com/Dark-Avian-Labs/Outfitter/pull/82): feat/read wor catalog db
 - **v1.26.1** `chore` [#83](https://github.com/Dark-Avian-Labs/Outfitter/pull/83): fix/platform audit shell
+- **v1.26.2** `chore(deps)` [#84](https://github.com/Dark-Avian-Labs/Outfitter/pull/84): Bump the production-dependencies group with 2 updates
