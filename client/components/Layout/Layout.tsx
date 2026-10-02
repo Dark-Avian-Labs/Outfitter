@@ -3,7 +3,7 @@ import { useClerk } from '@clerk/react';
 import { Suspense, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
-import feathers from '../../../assets/feathers.png';
+import feathers from '../../../assets/feathers.svg';
 import {
   APP_DISPLAY_NAME,
   APP_ID,
