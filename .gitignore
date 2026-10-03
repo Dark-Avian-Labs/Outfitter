@@ -3,6 +3,7 @@ dist/
 data/
 coverage/
 playwright-report/
+e2e/.clerk/
 test-results/
 blob-report/
 playwright/.cache/
