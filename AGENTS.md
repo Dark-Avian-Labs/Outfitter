@@ -1,6 +1,6 @@
 # Outfitter
 
-Shell, auth, env, and validate are in AppBase `AGENTS.md`. Port 3004. Vite 5174. Playwright 3104.
+Shell, auth, env, and validate are in AppBase `AGENTS.md`. Port 3004. Vite 5174. Playwright 3104. Signed-in Playwright 4104.
 
 Watcher of Realms gear optimizer. Hero identity and Lv.60 A0 stats are copied from Codex `CODEX_WOR_DB_PATH`, the read-only `wor-catalog.db`, when the local catalog is empty, from Admin, or from `pnpm run catalog:import`.
 
