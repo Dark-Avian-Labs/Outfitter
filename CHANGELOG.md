@@ -78,3 +78,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.26.2** `chore(deps)` [#84](https://github.com/Dark-Avian-Labs/Outfitter/pull/84): Bump the production-dependencies group with 2 updates
 - **v1.26.3** `chore`: Merge pull request 'ci: run checks on Forgejo' (#86) from ci/forgejo-workflows into main
 - **v1.27.0** `chore`: Merge pull request 'Replace the header feather and the soft wordmark glow' (#90) from feat/header-mark into main
+- **v1.28.0** `chore`: Merge pull request 'Fill the exclusive set after OCR passes are combined' (#94) from fix/exclusive-set-after-merge into main
