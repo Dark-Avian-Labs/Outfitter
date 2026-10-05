@@ -318,7 +318,6 @@ function findSlot(lines: string[]): GearSlot | null {
   return found;
 }
 
-// Hero exclusives print the hero instead of the set name. These pairs always roll that set.
 const EXCLUSIVE_HERO_SETS: readonly {
   set: string;
   slot: Exclude<GearSlot, 'ring'>;
@@ -362,9 +361,15 @@ const EXCLUSIVE_SET_BY_HERO_SLOT = (() => {
       throw new Error(`Exclusive set ${row.set} does not fit ${row.slot}`);
     }
     for (const hero of row.heroes) {
-      const key = `${normalizeOcrText(hero)}|${row.slot}`;
-      if (map.has(key)) throw new Error(`Duplicate exclusive set for ${hero} ${row.slot}`);
-      map.set(key, row.set);
+      const name = normalizeOcrText(hero);
+      const keys = [`${name}|${row.slot}`, `${name.toLowerCase().replace(/ /g, '-')}|${row.slot}`];
+      for (const key of keys) {
+        const existing = map.get(key);
+        if (existing && existing !== row.set) {
+          throw new Error(`Duplicate exclusive set for ${hero} ${row.slot}`);
+        }
+        map.set(key, row.set);
+      }
     }
   }
   return map;
@@ -413,13 +418,18 @@ export function mergeGearOcr<T extends ParsedGearOcr>(base: T, extra: T): T {
     }
   }
   const slot = base.slot ?? extra.slot;
+  const exclusiveHero = base.exclusive_hero_slug ?? extra.exclusive_hero_slug;
+  const fromHero =
+    exclusiveHero && slot
+      ? (EXCLUSIVE_SET_BY_HERO_SLOT.get(`${exclusiveHero.toLowerCase()}|${slot}`) ?? null)
+      : null;
   return {
     ...base,
     stats: orderMainsFirst(stats, slot),
     slot,
-    set_key: base.set_key ?? extra.set_key,
+    set_key: fromHero ?? base.set_key ?? extra.set_key,
     prefix: base.prefix ?? extra.prefix,
-    exclusive_hero_slug: base.exclusive_hero_slug ?? extra.exclusive_hero_slug,
+    exclusive_hero_slug: exclusiveHero,
     exclusive_faction: base.exclusive_faction ?? extra.exclusive_faction,
   };
 }

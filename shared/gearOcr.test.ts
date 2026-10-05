@@ -582,6 +582,53 @@ ATK 1200
     });
   });
 
+  it('fills the exclusive set when the hero and slot come from different passes', () => {
+    const solcadens = [{ slug: 'solcadens', name: 'Solcadens' }] as const;
+    const heroPass = parseGearOcr(
+      `
+SOLCADENS
+Exclusive
+ATK Bonus 66%
+Crit. Rate 21.5%
+`,
+      solcadens,
+    );
+    const slotPass = parseGearOcr(`
+Mythic Gear
+Amulet
+ATK Bonus 66%
+`);
+    expect(heroPass).toMatchObject({
+      slot: null,
+      set_key: null,
+      exclusive_hero_slug: 'solcadens',
+    });
+    expect(slotPass).toMatchObject({ slot: 'amulet', set_key: null, exclusive_hero_slug: null });
+    const merged = mergeGearOcr(heroPass, slotPass);
+    expect(merged).toMatchObject({
+      slot: 'amulet',
+      set_key: 'hells_lament',
+      exclusive_hero_slug: 'solcadens',
+    });
+    const next = applyOcrStats(
+      {
+        slot: 'weapon',
+        set_key: 'salvation',
+        prefix: 'none',
+        main_stat: 'atk',
+        main_value: 1,
+        main_bonus: 0,
+        substats: [{ stat: 'hp', value: 0 }],
+        exclusive_hero_slug: '',
+        exclusive_faction: '',
+      },
+      merged,
+    );
+    expect(next.slot).toBe('amulet');
+    expect(next.set_key).toBe('hells_lament');
+    expect(next.exclusive_hero_slug).toBe('solcadens');
+  });
+
   it('reads left-side and multi-word exclusives from the hero table', () => {
     expect(
       parseGearOcr(
