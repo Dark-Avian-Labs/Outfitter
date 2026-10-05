@@ -1,7 +1,7 @@
 import { buildClerkProfileAppearance } from '@/clerk';
 import { useClerk } from '@clerk/react';
 import { Suspense, useState } from 'react';
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 
 import feathers from '../../../assets/feathers.svg';
 import {
@@ -95,6 +95,7 @@ function ClerkUserMenuItems({ isAdmin, onClose }: { isAdmin: boolean; onClose: (
 }
 
 export function Layout() {
+  const location = useLocation();
   const { mode, toggleMode } = useTheme();
   const { auth } = useAuth();
   const currentYear = new Date().getFullYear();
@@ -114,7 +115,24 @@ export function Layout() {
       <header className="relative z-30 h-[100px] px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
-            <Link to={APP_PATHS.home} className="brand-lockup w-fit">
+            <Link
+              to={APP_PATHS.home}
+              className="brand-lockup w-fit"
+              onClick={(event) => {
+                if (
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey ||
+                  event.button !== 0 ||
+                  location.pathname !== APP_PATHS.home
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                window.location.reload();
+              }}
+            >
               <img
                 src={feathers}
                 alt="Dark Avian Labs feather mark"
