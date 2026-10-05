@@ -519,16 +519,16 @@ Rage Regen 18.5%
     ]);
   });
 
-  it('reads the hero from the exclusive banner and leaves set empty', () => {
+  it('fills the set from the hero exclusive table', () => {
     expect(parseGearOcr(exclusivePanel, vierna)).toMatchObject({
       slot: 'bangle',
-      set_key: null,
+      set_key: 'cataclysm',
       prefix: 'none',
       exclusive_hero_slug: 'vierna',
     });
   });
 
-  it('fills hero exclusive without inventing a set', () => {
+  it('fills hero exclusive and the known set', () => {
     const next = applyOcrStats(
       {
         slot: 'weapon',
@@ -544,10 +544,73 @@ Rage Regen 18.5%
       parseGearOcr(exclusivePanel, vierna),
     );
     expect(next.slot).toBe('bangle');
+    expect(next.set_key).toBe('cataclysm');
     expect(next.exclusive_hero_slug).toBe('vierna');
     expect(next.exclusive_faction).toBe('');
     expect(next.main_stat).toBe('atkBonus');
     expect(next.main_value).toBe(66);
+  });
+
+  it('leaves the set empty for an exclusive hero that is not in the table', () => {
+    expect(
+      parseGearOcr(exclusivePanel.replaceAll('Vierna', 'Ingrid').replaceAll('VIERNA', 'INGRID'), [
+        { slug: 'ingrid', name: 'Ingrid' },
+      ]),
+    ).toMatchObject({
+      slot: 'bangle',
+      set_key: null,
+      exclusive_hero_slug: 'ingrid',
+    });
+  });
+
+  it('does not copy a bangle set onto another slot for the same hero', () => {
+    expect(
+      parseGearOcr(
+        `
+Mythic Gear
+Vierna's Weapon
+VIERNA
+Exclusive
+ATK 1200
+`,
+        vierna,
+      ),
+    ).toMatchObject({
+      slot: 'weapon',
+      set_key: null,
+      exclusive_hero_slug: 'vierna',
+    });
+  });
+
+  it('reads left-side and multi-word exclusives from the hero table', () => {
+    expect(
+      parseGearOcr(
+        `
+Mythic Gear
+Laya's Weapon
+LAYA
+Exclusive
+ATK 1200
+`,
+        [{ slug: 'laya', name: 'Laya' }],
+      ),
+    ).toMatchObject({ slot: 'weapon', set_key: 'lights_grace', exclusive_hero_slug: 'laya' });
+    expect(
+      parseGearOcr(
+        `
+Mythic Gear
+King Harz's Amulet
+KING HARZ
+Exclusive
+HP Bonus 66%
+`,
+        [{ slug: 'king-harz', name: 'King Harz' }],
+      ),
+    ).toMatchObject({
+      slot: 'amulet',
+      set_key: 'tempered_will',
+      exclusive_hero_slug: 'king-harz',
+    });
   });
 
   const exclusiveRing = `

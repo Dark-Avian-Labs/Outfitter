@@ -15,7 +15,7 @@ import {
   type GearSlot,
   type GearStatKey,
 } from './catalog.js';
-import { ALL_SETS, setsForSlot } from './sets.js';
+import { ALL_SETS, SET_BY_KEY, setsForSlot } from './sets.js';
 
 export type DetectedGearStat = {
   stat: GearStatKey;
@@ -318,6 +318,69 @@ function findSlot(lines: string[]): GearSlot | null {
   return found;
 }
 
+// Hero exclusives print the hero instead of the set name. These pairs always roll that set.
+const EXCLUSIVE_HERO_SETS: readonly {
+  set: string;
+  slot: Exclude<GearSlot, 'ring'>;
+  heroes: readonly string[];
+}[] = [
+  { set: 'wings_of_grace', slot: 'bangle', heroes: ['Beelzebub'] },
+  {
+    set: 'cataclysm',
+    slot: 'bangle',
+    heroes: ['Zelus', 'Vierna', 'Alaura', 'Aracha', 'Hatssut'],
+  },
+  { set: 'cataclysm', slot: 'amulet', heroes: ['Rygar', 'Boreas'] },
+  { set: 'tempered_will', slot: 'amulet', heroes: ['King Harz'] },
+  { set: 'hells_lament', slot: 'bangle', heroes: ['Silas'] },
+  {
+    set: 'hells_lament',
+    slot: 'amulet',
+    heroes: ['Shamir', 'Salazar', 'Twinfiend', 'Solcadens'],
+  },
+  { set: 'astral_guardian', slot: 'armor', heroes: ['Abomination', 'Torodor'] },
+  { set: 'lights_grace', slot: 'weapon', heroes: ['Laya'] },
+  { set: 'lights_grace', slot: 'armor', heroes: ['Constance', 'Draelyn', 'Elowyn'] },
+  {
+    set: 'wicked_vengeance',
+    slot: 'weapon',
+    heroes: ['Iovar', 'Uredin', 'Setram', 'Volka', 'Valkyra', 'Talin', 'Razaak', 'Hex', 'Wrath'],
+  },
+  {
+    set: 'wicked_vengeance',
+    slot: 'armor',
+    heroes: ['Calista', 'Lord Phineas', 'Anai', 'Calypso', 'Nocturne'],
+  },
+];
+
+const EXCLUSIVE_SET_BY_HERO_SLOT = (() => {
+  const map = new Map<string, string>();
+  for (const row of EXCLUSIVE_HERO_SETS) {
+    const set = SET_BY_KEY[row.set];
+    const side = row.slot === 'weapon' || row.slot === 'armor' ? 'left' : 'right';
+    if (!set || set.side !== side) {
+      throw new Error(`Exclusive set ${row.set} does not fit ${row.slot}`);
+    }
+    for (const hero of row.heroes) {
+      const key = `${normalizeOcrText(hero)}|${row.slot}`;
+      if (map.has(key)) throw new Error(`Duplicate exclusive set for ${hero} ${row.slot}`);
+      map.set(key, row.set);
+    }
+  }
+  return map;
+})();
+
+function exclusiveSetForHero(
+  slug: string,
+  slot: GearSlot | null,
+  heroes: readonly OcrHeroRef[],
+): string | null {
+  if (!slot || slot === 'ring') return null;
+  const hero = heroes.find((entry) => entry.slug === slug);
+  if (!hero) return null;
+  return EXCLUSIVE_SET_BY_HERO_SLOT.get(`${normalizeOcrText(hero.name)}|${slot}`) ?? null;
+}
+
 function findSetKey(blob: string): string | null {
   const spaced = blob.replace(/\n/g, ' ');
   for (const { key, needle } of SET_NEEDLES) {
@@ -480,10 +543,11 @@ export function parseGearOcr(text: string, heroes: readonly OcrHeroRef[] = []): 
   salvageMainStat(stats, blob);
   const exclusiveHero = slot === 'ring' ? null : findExclusiveHero(blob, heroes);
   const exclusiveFaction = slot === 'ring' ? findExclusiveFaction(blob) : null;
+  const exclusiveSet = exclusiveHero ? exclusiveSetForHero(exclusiveHero, slot, heroes) : null;
   return {
     stats,
     slot,
-    set_key: exclusiveHero || exclusiveFaction ? null : findSetKey(blob),
+    set_key: exclusiveSet ?? (exclusiveHero || exclusiveFaction ? null : findSetKey(blob)),
     prefix: findPrefix(blob),
     exclusive_hero_slug: exclusiveHero,
     exclusive_faction: exclusiveFaction,
