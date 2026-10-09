@@ -324,6 +324,7 @@ const EXCLUSIVE_HERO_SETS: readonly {
   heroes: readonly string[];
 }[] = [
   { set: 'wings_of_grace', slot: 'bangle', heroes: ['Beelzebub'] },
+  { set: 'wings_of_grace', slot: 'amulet', heroes: ['Gwendolyn'] },
   {
     set: 'cataclysm',
     slot: 'bangle',
@@ -331,11 +332,11 @@ const EXCLUSIVE_HERO_SETS: readonly {
   },
   { set: 'cataclysm', slot: 'amulet', heroes: ['Rygar', 'Boreas'] },
   { set: 'tempered_will', slot: 'amulet', heroes: ['King Harz'] },
-  { set: 'hells_lament', slot: 'bangle', heroes: ['Silas'] },
+  { set: 'hells_lament', slot: 'bangle', heroes: ['Silas', 'Magmus'] },
   {
     set: 'hells_lament',
     slot: 'amulet',
-    heroes: ['Shamir', 'Salazar', 'Twinfiend', 'Solcadens'],
+    heroes: ['Shamir', 'Salazar', 'Twinfiend', 'Solcadens', 'Xena'],
   },
   { set: 'astral_guardian', slot: 'armor', heroes: ['Abomination', 'Torodor'] },
   { set: 'lights_grace', slot: 'weapon', heroes: ['Laya'] },
@@ -343,7 +344,18 @@ const EXCLUSIVE_HERO_SETS: readonly {
   {
     set: 'wicked_vengeance',
     slot: 'weapon',
-    heroes: ['Iovar', 'Uredin', 'Setram', 'Volka', 'Valkyra', 'Talin', 'Razaak', 'Hex', 'Wrath'],
+    heroes: [
+      'Iovar',
+      'Uredin',
+      'Setram',
+      'Volka',
+      'Valkyra',
+      'Talin',
+      'Razaak',
+      'Hex',
+      'Wrath',
+      'Zilitu',
+    ],
   },
   {
     set: 'wicked_vengeance',
