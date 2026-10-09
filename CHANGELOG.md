@@ -81,3 +81,4 @@ bumps the version (from the merged PR title / squash commit message).
 - **v1.28.0** `chore`: Merge pull request 'Fill the exclusive set after OCR passes are combined' (#94) from fix/exclusive-set-after-merge into main
 - **v1.28.1** `chore`: Merge pull request 'chore(deps): update dependencies to latest' (#97) from chore/deps-latest into main
 - **v1.28.2** `chore`: Merge pull request 'ci: rebuild dependency pull requests from an @actions rebase comment' (#100) from ci/actions-rebase into main
+- **v1.28.3** `chore`: Merge pull request 'chore(deps): update production dependencies' (#98) from deps/production into main
